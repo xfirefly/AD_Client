@@ -1,0 +1,29 @@
+package com.bluberry.adclient;
+
+public enum Msg {
+    MESSAGE_PARSE_AD_DONE,  // parse end, then add to list
+    MESSAGE_DRAW_AD,
+
+    MESSAGE_PARSE_AD_FINISH,
+    MESSAGE_DRAW_BG,
+    MESSAGE_DRAW_SCENE,
+    MESSAGE_DRAW_IMAGE,
+    MESSAGE_DRAW_VIDEO,
+
+    MESSAGE_PREV_SCENE,
+    MESSAGE_NEXT_SCENE,
+
+    MESSAGE_STOP_AND_RENAME,
+    MESSAGE_RECV_JSON_BEGIN,
+    MESSAGE_RECV_JSON_PROGRESS,
+    MESSAGE_RECV_JSON_END,
+
+    MESSAGE_TakeScreenshot,
+    MESSAGE_NO_DATA,
+
+    MESSAGE_ADD_TIMING_SCENE, //新的定时场景发过来, 追加到 AdProgram 后面, 到达定时时间点开始播放
+    MESSAGE_CHANGE_SUBTITLE_VISABLE,
+    MESSAGE_DRAW_SCENE_EX,
+
+    MESSAGE_ADD_HDMI,
+}

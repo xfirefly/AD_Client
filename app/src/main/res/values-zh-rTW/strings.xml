@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name"> Client </string>
+    <string name="res">分辨率 </string>
+    <string name="ip">IP 地址</string>
+    <string name="ip_set">IP 地址設定</string>
+    <string name="id">ID</string>
+    <string name="id_set">ID 設定</string>
+    
+    <string name="set">設定</string>
+    <string name="sub_onff">字幕開關</string>
+    <string name="prev_sub">上一場景</string>
+    <string name="next_sub">下一場景</string>
+ 	<string name="switch_sub">切換字幕場景</string>
+  
+ 	
+ 	<string name="wait">接收文件, 請稍候</string>
+ 	<string name="no_data">無數據, 請通過 管理工具 發佈內容</string>
+    <string name="lang">語言</string>
+    <string name="date">時間</string>
+
+</resources>

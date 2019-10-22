@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name"> Client </string>
+    <string name="res">resolution </string>
+    <string name="ip">IP address</string>
+    <string name="ip_set">IP address setting</string>
+    <string name="id">ID</string>
+    <string name="id_set">ID setting</string>
+    
+    <string name="set">setting</string>
+    <string name="sub_onff">subtitle on/off</string>
+    <string name="prev_sub">prev scene</string>
+    <string name="next_sub">next scene</string>
+ 	<string name="switch_sub">switch subtitles scene</string>
+  
+ 	
+ 	<string name="wait">receive file, wait... </string>
+ 	<string name="no_data">no data</string>
+    <string name="lang">language</string>
+    <string name="date">Time setup</string>
+</resources>

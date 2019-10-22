@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+    <string-array name="screen_proportion">
+            <item>AUTO</item>
+            <item>NTSC</item>
+            <item>PAL</item>
+            <item>480P</item>
+            <item>576P</item>
+            <item>720P @ 50Hz</item>
+            <item>720P @ 60Hz</item>
+            <item>1080I @ 50Hz</item>
+            <item>1080I @ 60Hz</item>
+            <item>1080P @ 50Hz</item>
+            <item>1080P @ 60Hz</item>
+            <item>3840x2160P @ 24Hz</item>
+            <item>3840x2160P @ 25Hz</item>
+            <item>3840x2160P @ 30Hz</item>
+            <item>4096x2160P @ 24Hz</item>
+            <item>1080P @ 24Hz</item>
+    </string-array>
+      
+	<string-array name="autoboot">        
+        <item>关</item>
+        <item>开</item>
+    </string-array>
+
+    <string-array name="lang">
+        <item>中文</item>
+        <item>English</item>
+    </string-array>
+
+</resources>

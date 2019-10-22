@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.bluberry.setup.ArrowView
+    android:gravity="center" 
+    android:orientation="horizontal" 
+    android:focusable="true" 
+    android:layout_width="540.0dip" 
+    android:layout_height="105.0dip"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <ImageView 
+        android:id="@+id/arrow_left" 
+        android:background="@drawable/arrow_left" 
+        android:layout_width="wrap_content" 
+        android:layout_height="wrap_content" />
+    <TextView 
+        android:textSize="28.0sp" 
+        android:textColor="@color/option_text_color" 
+        android:gravity="center" 
+        android:layout_gravity="center" 
+        android:id="@+id/context_view" 
+        android:layout_width="200.0dip" 
+        android:layout_height="wrap_content" />
+    <ImageView 
+        android:id="@+id/arrow_right" 
+        android:layout_width="wrap_content" 
+        android:layout_height="wrap_content" 
+        android:src="@drawable/arrow_right" />
+</com.bluberry.setup.ArrowView>

@@ -1,0 +1,97 @@
+apply plugin: 'com.android.application'
+
+//apply plugin: 'AndResGuard'
+
+android {
+    compileSdkVersion 28
+
+    flavorDimensions "default"
+
+    defaultConfig {
+        applicationId "com.bluberry.adclient"
+        minSdkVersion 19
+        targetSdkVersion 25
+        versionCode 1
+        versionName "1.0"
+
+    }
+
+    signingConfigs {
+        debug {
+            keyAlias 'huiqiu'
+            keyPassword '080710318'
+            storeFile file('D:/apk_key/platform_rtk.keystore')
+            storePassword '080710318'
+        }
+
+        release {
+            keyAlias 'huiqiu'
+            keyPassword '080710318'
+            storeFile file('D:/apk_key/platform_rtk.keystore')
+            storePassword '080710318'
+    }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            zipAlignEnabled true
+            shrinkResources true
+
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+    }
+
+    lintOptions {
+        checkReleaseBuilds false
+        // Or, if you prefer, you can continue to check for errors in release builds,
+        // but continue the build even when errors are found:
+        abortOnError false
+    }
+
+/*    productFlavors {
+        arm {
+            ndk {
+                abiFilters "armeabi-v7a"
+            }
+        }
+    }*/
+    useLibrary  'org.apache.http.legacy'
+
+/*
+    externalNativeBuild {
+        ndkBuild {
+            path 'src/main/jni/Android.mk'
+        }
+    }
+*/
+
+
+
+
+}
+
+repositories {
+    flatDir {
+        dirs 'libs'
+    }
+}
+
+
+
+dependencies {
+    implementation 'com.android.support:appcompat-v7:28.0.0'
+
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+
+    //provided files('W:/rtk/1195/160315_tuke/160315/android/out/target/common/obj/JAVA_LIBRARIES/realtek_intermediates/classes.jar')
+
+    //compile files('W:/kylin_dd/build_scripts/android/out/target/common/obj/JAVA_LIBRARIES/realtek_intermediates/classes.jar')
+
+
+    testCompile 'junit:junit:4.12'
+}

@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.bluberry.setup.OptionMenuLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/category_title"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/epg_bg"
+    android:orientation="vertical" >
+
+
+
+    <View
+        android:layout_width="wrap_content"
+        android:layout_height="2.0dip"
+        android:background="@drawable/xian" />
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="0.0dip"
+        android:layout_weight="1.0"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        android:orientation="horizontal" >
+
+        <TextView
+            android:layout_width="209.0dip"
+            android:layout_height="fill_parent"
+            android:gravity="center"
+            android:text="@string/res"
+            android:textSize="28.0sp" />
+
+        <include
+            android:id="@+id/video_res"
+            layout="@layout/arrow_view" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="wrap_content"
+        android:layout_height="2.0dip"
+        android:background="@drawable/xian" />
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="0.0dip"
+        android:layout_weight="1.0"
+        android:gravity="center_vertical"
+        android:orientation="horizontal" >
+
+        <TextView
+            android:layout_width="209.0dip"
+            android:layout_height="fill_parent"
+            android:gravity="center"
+            android:text="@string/sub_onff"
+            android:textSize="28.0sp" />
+
+        <include
+            android:id="@+id/autoboot"
+            layout="@layout/arrow_view" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="wrap_content"
+        android:layout_height="2.0dip"
+        android:background="@drawable/xian" />
+
+    <LinearLayout
+        android:id="@+id/ipset"
+        android:layout_width="fill_parent"
+        android:layout_height="0.0dip"
+        android:layout_weight="1.0"
+        android:gravity="center_vertical"
+        android:orientation="horizontal" >
+
+        <TextView
+            android:layout_width="209.0dip"
+            android:layout_height="fill_parent"
+            android:gravity="center"
+            android:text="@string/ip"
+            android:textSize="28.0sp" />
+
+        <LinearLayout
+            android:layout_width="600.0dip"
+            android:layout_height="fill_parent"
+            android:gravity="center"
+            android:orientation="horizontal" >
+
+            <TextView
+                android:id="@+id/txt_curr_ip"
+                android:layout_width="209.0dip"
+                android:layout_height="fill_parent"
+                android:gravity="center"
+                
+                android:textSize="28.0sp" />
+
+            <Button
+                android:id="@+id/bt_ipset"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="@drawable/pop_item_selector"
+                android:text="@string/set"
+                android:textColor="#ffffff"
+                android:textSize="28.0sp" />
+        </LinearLayout>
+    </LinearLayout>   
+
+    <View
+        android:layout_width="wrap_content"
+        android:layout_height="2.0dip"
+        android:background="@drawable/xian" />
+
+  <!--   <LinearLayout
+        android:id="@+id/servipset"
+        android:layout_width="fill_parent"
+        android:layout_height="0.0dip"
+        android:layout_weight="1.0"
+        android:gravity="center_vertical"
+        android:orientation="horizontal" >
+
+        <TextView
+            android:layout_width="209.0dip"
+            android:layout_height="fill_parent"
+            android:gravity="center"
+            android:text="@string/ip"
+            android:textSize="28.0sp" />
+
+        <LinearLayout
+            android:layout_width="600.0dip"
+            android:layout_height="fill_parent"
+            android:gravity="center"
+            android:orientation="horizontal" >
+
+            <com.bluberry.setup.IPAddressText
+                android:id="@+id/txt_serv_ip"
+                android:layout_width="209.0dip"
+                android:layout_height="fill_parent"
+                android:gravity="center"
+                android:text="  "
+                android:textSize="28.0sp" />
+
+            <Button
+                android:id="@+id/bt_servipset"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="@drawable/pop_item_selector"
+                android:text="@string/set"
+                android:textColor="#ffffff"
+                android:textSize="28.0sp" />
+        </LinearLayout>
+    </LinearLayout> -->
+
+    <View
+        android:layout_width="wrap_content"
+        android:layout_height="2.0dip"
+        android:background="@drawable/xian" />
+
+    <LinearLayout
+        android:id="@+id/ll_idset"
+        android:layout_width="fill_parent"
+        android:layout_height="0.0dip"
+        android:layout_weight="1.0"
+        android:gravity="center_vertical"
+        android:orientation="horizontal" >
+
+        <TextView
+            android:layout_width="209.0dip"
+            android:layout_height="fill_parent"
+            android:gravity="center"
+            android:text="@string/id"
+            android:textSize="28.0sp" />
+
+        <LinearLayout
+            android:layout_width="600.0dip"
+            android:layout_height="fill_parent"
+            android:gravity="center"
+            android:orientation="horizontal" >
+
+            <TextView
+                android:id="@+id/txt_curr_id"
+                android:layout_width="209.0dip"
+                android:layout_height="fill_parent"
+                android:gravity="center"
+                 
+                android:textSize="28.0sp" />
+
+            <Button
+                android:id="@+id/bt_idset"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="@drawable/pop_item_selector"
+                android:text="@string/set"
+                android:textColor="#ffffff"
+                android:textSize="28.0sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:layout_width="wrap_content"
+        android:layout_height="2.0dip"
+        android:background="@drawable/xian" />
+
+
+    <LinearLayout
+        android:id="@+id/lang_set"
+        android:layout_width="fill_parent"
+        android:layout_height="0.0dip"
+        android:layout_weight="1.0"
+        android:gravity="center_vertical"
+        android:orientation="horizontal" >
+
+        <TextView
+            android:layout_width="209.0dip"
+            android:layout_height="fill_parent"
+            android:gravity="center"
+            android:text="@string/lang"
+            android:textSize="28.0sp" />
+
+        <LinearLayout
+            android:layout_width="600.0dip"
+            android:layout_height="fill_parent"
+            android:gravity="center"
+            android:orientation="horizontal" >
+
+            <TextView
+                android:id="@+id/eee33"
+                android:layout_width="209.0dip"
+                android:layout_height="fill_parent"
+                android:gravity="center"
+
+                android:textSize="28.0sp" />
+
+            <Button
+                android:id="@+id/bt_lang"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="@drawable/pop_item_selector"
+                android:text="@string/set"
+                android:textColor="#ffffff"
+                android:textSize="28.0sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:layout_width="wrap_content"
+        android:layout_height="2.0dip"
+        android:background="@drawable/xian" />
+
+
+    <LinearLayout
+        android:id="@+id/date_set"
+        android:layout_width="fill_parent"
+        android:layout_height="0.0dip"
+        android:layout_weight="1.0"
+        android:gravity="center_vertical"
+        android:orientation="horizontal" >
+
+        <TextView
+            android:layout_width="209.0dip"
+            android:layout_height="fill_parent"
+            android:gravity="center"
+            android:text="@string/date"
+            android:textSize="28.0sp" />
+
+        <LinearLayout
+            android:layout_width="600.0dip"
+            android:layout_height="fill_parent"
+            android:gravity="center"
+            android:orientation="horizontal" >
+
+            <TextView
+                android:id="@+id/txt_time"
+                android:layout_width="209.0dip"
+                android:layout_height="fill_parent"
+                android:gravity="center"
+
+                android:textSize="28.0sp" />
+
+            <Button
+                android:id="@+id/bt_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="@drawable/pop_item_selector"
+                android:text="@string/set"
+                android:textColor="#ffffff"
+                android:textSize="28.0sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:layout_width="wrap_content"
+        android:layout_height="2.0dip"
+        android:background="@drawable/xian" />
+
+    <LinearLayout
+        android:id="@+id/ll_prev"
+        android:layout_width="fill_parent"
+        android:layout_height="0.0dip"
+        android:layout_weight="1.0"
+        android:visibility="gone"
+        android:gravity="center_vertical"
+        android:orientation="horizontal" >
+
+        <TextView
+            android:layout_width="209.0dip"
+            android:layout_height="fill_parent"
+            android:gravity="center"
+            android:text="@string/switch_sub"
+            android:textSize="28.0sp" />
+
+        <LinearLayout
+            android:layout_width="600.0dip"
+            android:layout_height="fill_parent"
+            android:gravity="center"
+            android:orientation="horizontal" >
+
+            <Button
+                android:id="@+id/bt_prev"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="@drawable/pop_item_selector"
+                android:text="@string/prev_sub"
+                android:textColor="#ffffff"
+                android:textSize="28.0sp" />
+
+            <TextView
+                android:layout_width="40.0dip"
+                android:layout_height="fill_parent"
+                android:gravity="center"
+                android:textSize="28.0sp" />
+
+            <Button
+                android:id="@+id/bt_next"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="@drawable/pop_item_selector"
+                android:text="@string/next_sub"
+                android:textColor="#ffffff"
+                android:textSize="28.0sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+
+    <View
+        android:layout_width="wrap_content"
+        android:layout_height="2.0dip"
+        android:background="@drawable/xian" />
+
+
+
+</com.bluberry.setup.OptionMenuLayout>
