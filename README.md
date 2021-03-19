@@ -2,7 +2,7 @@
 能播放包含视频、图片、字幕等多媒体节目的App, 适配安卓大屏终端, 提供完全开源的配套信息发布软件.
 适应餐饮、零售等行业单机或局域网内应用
 
-[PC端节目制作和管理软件 开源整理中]()
+[PC端节目制作和管理软件 ](https://github.com/xfirefly/AD_server)
 
 ## 术语解释
 - 终端: 播放多媒体广告内容的硬件设备
@@ -39,6 +39,9 @@
 ## 问题反馈
 - issue please
 - 微信 maxfirefly
+
+## 注意
+- 仅供学习, 不可商用
 
 ## 界面展示
 ![Alt text](image/edit.png?raw=true "Title")
