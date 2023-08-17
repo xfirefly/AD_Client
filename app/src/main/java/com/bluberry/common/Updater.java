@@ -47,46 +47,25 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 public class Updater {
-    private static final String tag = "Updater";
-
     public static final int ACTION_UPDATE_APK = 1; // 更新本apk
     public static final int ACTION_INSTALL_APK = 2; // 安装其他apk
-
-    private class PkgInfo {
-        public String upgradeMode;
-        public String product;
-        public String newVerName;
-        public int newCode;
-        public String swUpgradeUrl;
-        public String md5;
-        public String pkgName;
-
-        public ArrayList<String> textList;
-
-        PkgInfo() {
-            upgradeMode = null;
-            swUpgradeUrl = null;
-            newVerName = null;
-            newCode = -1;
-            md5 = null;
-            pkgName = null;
-            textList = new ArrayList<String>();
-        }
-    }
-
+    private static final String tag = "Updater";
+    private final static int kSystemRootStateUnknow = -1;
+    private final static int kSystemRootStateDisable = 0;
+    private final static int kSystemRootStateEnable = 1;
+    private static int systemRootState = kSystemRootStateUnknow;
     private PkgInfo mServerPkg;
     private Context mContext;
     private Handler mHandler;
     private String mXmlURL = null;
     private String mXmlTmpPath = null;
     private String mApkTmpPath = null;
-
     private String msgTitle = null;
     private String msgOK = null;
     private String msgCancel = null;
-
     private int mAction;
     private int mThreadSleep = 5000;
+    private ProgressListener listener = null;
 
     public Updater(Context context, Handler handler, int action) {
         mAction = action;
@@ -142,6 +121,31 @@ public class Updater {
         Log.v(tag, "cfg ver:" + getVerName());
         Log.v(tag, "cfg id:" + PkgConfig.customer);
         Log.v(tag, "cfg xml:" + mXmlURL);
+    }
+
+    public static boolean isRootSystem() {
+        if (systemRootState == kSystemRootStateEnable) {
+            return true;
+        } else if (systemRootState == kSystemRootStateDisable) {
+
+            return false;
+        }
+
+        File f = null;
+        final String kSuSearchPaths[] = {"/system/bin/", "/system/xbin/", "/system/sbin/", "/sbin/", "/vendor/bin/"};
+        try {
+            for (int i = 0; i < kSuSearchPaths.length; i++) {
+                f = new File(kSuSearchPaths[i] + "su");
+                if (f != null && f.exists()) {
+                    systemRootState = kSystemRootStateEnable;
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        systemRootState = kSystemRootStateDisable;
+        return false;
     }
 
     private int getVerCode() {
@@ -340,36 +344,6 @@ public class Updater {
         return mServerPkg.upgradeMode;
     }
 
-    private final static int kSystemRootStateUnknow = -1;
-    private final static int kSystemRootStateDisable = 0;
-    private final static int kSystemRootStateEnable = 1;
-    private static int systemRootState = kSystemRootStateUnknow;
-
-    public static boolean isRootSystem() {
-        if (systemRootState == kSystemRootStateEnable) {
-            return true;
-        } else if (systemRootState == kSystemRootStateDisable) {
-
-            return false;
-        }
-
-        File f = null;
-        final String kSuSearchPaths[] = {"/system/bin/", "/system/xbin/", "/system/sbin/", "/sbin/", "/vendor/bin/"};
-        try {
-            for (int i = 0; i < kSuSearchPaths.length; i++) {
-                f = new File(kSuSearchPaths[i] + "su");
-                if (f != null && f.exists()) {
-                    systemRootState = kSystemRootStateEnable;
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        systemRootState = kSystemRootStateDisable;
-        return false;
-    }
-
     @SuppressLint("NewApi")
     private void startNormalUpgrade() {
         StringBuffer sb = new StringBuffer();
@@ -538,12 +512,6 @@ public class Updater {
         return false;
     }
 
-    private ProgressListener listener = null;
-
-    public interface ProgressListener {
-        void onProgress(long progress);
-    }
-
     public void setProgressListener(ProgressListener listener) {
         this.listener = listener;
     }
@@ -590,6 +558,32 @@ public class Updater {
         bufOut.close();
 
         return true;
+    }
+
+    public interface ProgressListener {
+        void onProgress(long progress);
+    }
+
+    private class PkgInfo {
+        public String upgradeMode;
+        public String product;
+        public String newVerName;
+        public int newCode;
+        public String swUpgradeUrl;
+        public String md5;
+        public String pkgName;
+
+        public ArrayList<String> textList;
+
+        PkgInfo() {
+            upgradeMode = null;
+            swUpgradeUrl = null;
+            newVerName = null;
+            newCode = -1;
+            md5 = null;
+            pkgName = null;
+            textList = new ArrayList<String>();
+        }
     }
 
 }

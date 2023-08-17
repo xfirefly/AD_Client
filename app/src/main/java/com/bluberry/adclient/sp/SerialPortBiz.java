@@ -6,7 +6,7 @@ import android.view.View;
 
 import com.bluberry.adclient.App;
 import com.bluberry.adclient.Msg;
-import com.bluberry.adclient.RTKSourceInActivity;
+import com.bluberry.adclient.MainActivity;
 import com.bluberry.common.FileUtil;
 import com.bluberry.common.IOUtil;
 
@@ -21,10 +21,28 @@ import java.util.Arrays;
 
 public class SerialPortBiz {
 
+    final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
     FileOutputStream mOutputStream;
     FileInputStream mInputStream;
     SerialPort sp;
     ReadThread mReadThread;
+    byte[] prefix = {(byte) 0xca, (byte) 0xfe, (byte) 0xca, (byte) 0xfe};
+
+    public static int byteArrayToLeInt(byte[] b) {
+        final ByteBuffer bb = ByteBuffer.wrap(b);
+        bb.order(ByteOrder.LITTLE_ENDIAN);
+        return bb.getInt();
+    }
+
+    public static String bytesToHex(byte[] bytes, int len) {
+        char[] hexChars = new char[len * 2];
+        for (int j = 0; j < len; j++) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = hexArray[v >>> 4];
+            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+        }
+        return new String(hexChars);
+    }
 
     public void init() {
 
@@ -46,7 +64,7 @@ public class SerialPortBiz {
 		Log.e("D", "gpio   " + sp.readGPIO(34) );
 		Log.e("D", "gpio   " + sp.readGPIO(35) );
 		Log.e("D", "gpio   " + sp.readGPIO(4) );
-		
+
 		App.RunAsApp("chmod 777 /sys/class/gpio/export");
 		*/
 
@@ -76,8 +94,6 @@ public class SerialPortBiz {
         }
 
     }
-
-    byte[] prefix = {(byte) 0xca, (byte) 0xfe, (byte) 0xca, (byte) 0xfe};
 
     void process(final byte[] src) {
         byte[] dest = new byte[src.length];
@@ -126,35 +142,17 @@ public class SerialPortBiz {
             fos.flush();
             fos.close();
 
-            RTKSourceInActivity.thiz.sendMessage(Msg.MESSAGE_RECV_JSON_BEGIN, "");
+            MainActivity.thiz.sendMessage(Msg.MESSAGE_RECV_JSON_BEGIN, "");
 
             String dir = App.getNextDir();
             FileUtil.Unzip(App.zipFile, dir);
 
-            RTKSourceInActivity.thiz.parseJson(dir, true);
+            MainActivity.thiz.parseJson(dir, true);
 
         } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-    }
-
-    public static int byteArrayToLeInt(byte[] b) {
-        final ByteBuffer bb = ByteBuffer.wrap(b);
-        bb.order(ByteOrder.LITTLE_ENDIAN);
-        return bb.getInt();
-    }
-
-    final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
-
-    public static String bytesToHex(byte[] bytes, int len) {
-        char[] hexChars = new char[len * 2];
-        for (int j = 0; j < len; j++) {
-            int v = bytes[j] & 0xFF;
-            hexChars[j * 2] = hexArray[v >>> 4];
-            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
-        }
-        return new String(hexChars);
     }
 
     private class ReadThread extends Thread {
@@ -174,6 +172,8 @@ public class SerialPortBiz {
 			}
 		}
 		*/
+
+        int endState = 0; //比较到第几个
 
         @Override
         public void run() {
@@ -215,8 +215,6 @@ public class SerialPortBiz {
 
             }
         }
-
-        int endState = 0; //比较到第几个
 
         //byte[] end = { 0xc1, 0x31, 0x78, 0xfe };
 

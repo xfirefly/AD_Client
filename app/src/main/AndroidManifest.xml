@@ -54,7 +54,7 @@
         android:largeHeap="true"
         android:persistent="true" >
         <activity
-            android:name=".RTKSourceInActivity"
+            android:name=".MainActivity"
             android:clearTaskOnLaunch="true"
             android:configChanges="navigation|keyboard|keyboardHidden"
             android:launchMode="singleTask"

@@ -93,7 +93,7 @@ public class MyBroadcastReceiver extends BroadcastReceiver {
 
         public void run() {
             try {
-                RTKSourceInActivity.thiz.sendMessage(Msg.MESSAGE_RECV_JSON_BEGIN, "");
+                MainActivity.thiz.sendMessage(Msg.MESSAGE_RECV_JSON_BEGIN, "");
 
                 File f = new File(App.zipFile);
                 IOUtil.delete(f);
@@ -104,7 +104,7 @@ public class MyBroadcastReceiver extends BroadcastReceiver {
                 String dir = App.getNextDir();
                 FileUtil.Unzip(App.zipFile, dir);
 
-                RTKSourceInActivity.thiz.parseJson(dir, true);
+                MainActivity.thiz.parseJson(dir, true);
 
             } catch (Exception e) {
                 // TODO Auto-generated catch block

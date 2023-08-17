@@ -12,34 +12,9 @@ import java.util.regex.Pattern;
  */
 public class RegexpUtils {
     /**
-     * Interface which must implement the one who wants to process, replace
-     * every occurrence of the program
-     */
-    public static interface Replacer {
-        /**
-         * The method should return a string which will be the replacement of
-         * the found regexp-th fragment
-         *
-         * @Param matches a list with information about the fragments found, the
-         * zero element of the list Contains the entire text of
-         * "coincidences" The rest of the elements 1,2, ... contain
-         * values for the groups within the regular expression
-         * @Return
-         */
-        public String onMatch(List<String> matches);
-    }
-
-    /**
      * Cache, which stores the compiled regexp-expression
      */
     private static HashMap<String, Pattern> cache = new HashMap<String, Pattern>();
-
-    /**
-     * Ochiska cache compiled regexp-expression
-     */
-    public void clearCache() {
-        cache.clear();
-    }
 
     /**
      * Do a search in the pattern string and replace it with a new value is
@@ -212,5 +187,30 @@ public class RegexpUtils {
         final Pattern rezPattern = Pattern.compile(pattern, mod);
         cache.put(pattern_orig, rezPattern);
         return rezPattern;
+    }
+
+    /**
+     * Ochiska cache compiled regexp-expression
+     */
+    public void clearCache() {
+        cache.clear();
+    }
+
+    /**
+     * Interface which must implement the one who wants to process, replace
+     * every occurrence of the program
+     */
+    public static interface Replacer {
+        /**
+         * The method should return a string which will be the replacement of
+         * the found regexp-th fragment
+         *
+         * @Param matches a list with information about the fragments found, the
+         * zero element of the list Contains the entire text of
+         * "coincidences" The rest of the elements 1,2, ... contain
+         * values for the groups within the regular expression
+         * @Return
+         */
+        public String onMatch(List<String> matches);
     }
 }

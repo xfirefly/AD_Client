@@ -9,6 +9,12 @@ public class GPIO {
     public String port;
     public int pin;
 
+    //Constructor
+    public GPIO(int pin) {
+        this.port = "gpio" + pin;
+        this.pin = pin;
+    }
+
     //get direction of gpio
     public String getInOut() {
         String command = String.format("cat /sys/class/gpio/%s/direction", this.port);
@@ -101,7 +107,7 @@ public class GPIO {
         }
     }
 
-    //init the pin 
+    //init the pin
     public int initPin(String direction) {
         int retour = 0;
         boolean ret = true;
@@ -133,11 +139,5 @@ public class GPIO {
         }
 
         return retour;
-    }
-
-    //Constructor
-    public GPIO(int pin) {
-        this.port = "gpio" + pin;
-        this.pin = pin;
     }
 }

@@ -13,12 +13,6 @@ import cs.ipc.Direction;
 // http://stackoverflow.com/questions/8970927/marquee-set-speed
 public class ScrollTextView extends TextView {
 
-    // scrolling feature
-    private Scroller mSlr = null;
-
-    // milliseconds for a round of scrolling
-    private int mRndDuration = 10000;
-
     /*
      Great answer! Two things I changed though: |1. Currently speed depends on text's length. To fix it,
      make int duration = (int) (1000f * distance / mScrollSpeed);, where mScrollSpeed is around 100f.
@@ -26,14 +20,18 @@ public class ScrollTextView extends TextView {
      use OnGlobalLayoutListener for that:
      */
     public int mScrollSpeed = 100;
-
     public Direction mDir;
-
+    // scrolling feature
+    private Scroller mSlr = null;
+    // milliseconds for a round of scrolling
+    private int mRndDuration = 10000;
     // the X offset when paused
     private int mXPaused = 0;
 
     // whether it's being paused
     private boolean mPaused = true;
+    private Rect rect;
+    private boolean textShort;
 
     /*
      * constructor
@@ -67,6 +65,13 @@ public class ScrollTextView extends TextView {
         setEllipsize(null);
         setVisibility(INVISIBLE);
     }
+
+    //	07-08 19:30:16.010: W/startScroll(8256): mXPaused 0
+    //	07-08 19:30:16.010: W/startScroll(8256): distance 14683
+    //	07-08 19:30:16.010: W/startScroll(8256): duration 139838
+    //	07-08 19:30:16.030: I/computeScroll(8256): getCurrX 2
+    //	07-08 19:30:16.100: I/computeScroll(8256): getCurrX 10
+    //	07-08 19:30:16.130: I/computeScroll(8256): getCurrX 13
 
     /**
      * begin to scroll the text from the original position
@@ -139,16 +144,6 @@ public class ScrollTextView extends TextView {
         invalidate();
         mPaused = false;
     }
-
-    //	07-08 19:30:16.010: W/startScroll(8256): mXPaused 0
-    //	07-08 19:30:16.010: W/startScroll(8256): distance 14683
-    //	07-08 19:30:16.010: W/startScroll(8256): duration 139838
-    //	07-08 19:30:16.030: I/computeScroll(8256): getCurrX 2
-    //	07-08 19:30:16.100: I/computeScroll(8256): getCurrX 10
-    //	07-08 19:30:16.130: I/computeScroll(8256): getCurrX 13
-
-    private Rect rect;
-    private boolean textShort;
 
     /**
      * calculate the scrolling length of the text in pixel

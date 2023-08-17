@@ -129,8 +129,12 @@ import java.util.StringTokenizer;
  */
 public class IniEditor {
 
+    private static final Line BLANK_LINE = new Line() {
+        public String toString() {
+            return "";
+        }
+    };
     private static boolean DEFAULT_CASE_SENSITIVITY = false;
-
     private Map<String, Section> sections;
     private List<String> sectionOrder;
     private String commonName;
@@ -235,6 +239,15 @@ public class IniEditor {
         }
         this.commentDelims = delims;
         this.optionFormat = new OptionFormat(Section.DEFAULT_OPTION_FORMAT);
+    }
+
+    private static String[] toStringArray(Collection coll) {
+        Object[] objArray = coll.toArray();
+        String[] strArray = new String[objArray.length];
+        for (int i = 0; i < objArray.length; i++) {
+            strArray[i] = (String) objArray[i];
+        }
+        return strArray;
     }
 
     /**
@@ -593,13 +606,8 @@ public class IniEditor {
         return name.trim();
     }
 
-    private static String[] toStringArray(Collection coll) {
-        Object[] objArray = coll.toArray();
-        String[] strArray = new String[objArray.length];
-        for (int i = 0; i < objArray.length; i++) {
-            strArray[i] = (String) objArray[i];
-        }
-        return strArray;
+    private interface Line {
+        public String toString();
     }
 
     /**
@@ -611,6 +619,19 @@ public class IniEditor {
      */
     public static class Section {
 
+        public static final String DEFAULT_OPTION_FORMAT = "%s %s %s";
+        public static final char HEADER_START = '[';
+        public static final char HEADER_END = ']';
+        private static final char[] DEFAULT_OPTION_DELIMS
+                = new char[]{'=', ':'};
+        private static final char[] DEFAULT_COMMENT_DELIMS
+                = new char[]{'#', ';'};
+        private static final char[] OPTION_DELIMS_WHITESPACE
+                = new char[]{' ', '\t'};
+        private static final boolean DEFAULT_CASE_SENSITIVITY = false;
+        private static final int NAME_MAXLENGTH = 1024;
+        private static final char[] INVALID_NAME_CHARS = {HEADER_START, HEADER_END};
+        private static final String NEWLINE_CHARS = "\n\r";
         private String name;
         private Map<String, Option> options;
         private List<Line> lines;
@@ -620,20 +641,6 @@ public class IniEditor {
         private char[] commentDelimsSorted;
         private boolean isCaseSensitive;
         private OptionFormat optionFormat;
-
-        private static final char[] DEFAULT_OPTION_DELIMS
-                = new char[]{'=', ':'};
-        private static final char[] DEFAULT_COMMENT_DELIMS
-                = new char[]{'#', ';'};
-        private static final char[] OPTION_DELIMS_WHITESPACE
-                = new char[]{' ', '\t'};
-        private static final boolean DEFAULT_CASE_SENSITIVITY = false;
-        public static final String DEFAULT_OPTION_FORMAT = "%s %s %s";
-
-        public static final char HEADER_START = '[';
-        public static final char HEADER_END = ']';
-        private static final int NAME_MAXLENGTH = 1024;
-        private static final char[] INVALID_NAME_CHARS = {HEADER_START, HEADER_END};
 
         /**
          * Constructs a new section.
@@ -697,6 +704,26 @@ public class IniEditor {
             System.arraycopy(this.commentDelims, 0, this.commentDelimsSorted, 0, this.commentDelims.length);
             Arrays.sort(this.optionDelimsSorted);
             Arrays.sort(this.commentDelimsSorted);
+        }
+
+        /**
+         * Checks a string for validity as a section name. It can't contain the
+         * characters '[' and ']'. An empty string or one consisting only of
+         * white space isn't allowed either.
+         *
+         * @param name the name to validate
+         * @return true if the name validates as a section name
+         */
+        private static boolean validName(String name) {
+            if (name.trim().equals("")) {
+                return false;
+            }
+            for (int i = 0; i < INVALID_NAME_CHARS.length; i++) {
+                if (name.indexOf(INVALID_NAME_CHARS[i]) >= 0) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         /**
@@ -851,8 +878,6 @@ public class IniEditor {
             }
         }
 
-        private static final String NEWLINE_CHARS = "\n\r";
-
         /**
          * Adds a blank line to the end of this section.
          */
@@ -967,26 +992,6 @@ public class IniEditor {
         }
 
         /**
-         * Checks a string for validity as a section name. It can't contain the
-         * characters '[' and ']'. An empty string or one consisting only of
-         * white space isn't allowed either.
-         *
-         * @param name the name to validate
-         * @return true if the name validates as a section name
-         */
-        private static boolean validName(String name) {
-            if (name.trim().equals("")) {
-                return false;
-            }
-            for (int i = 0; i < INVALID_NAME_CHARS.length; i++) {
-                if (name.indexOf(INVALID_NAME_CHARS[i]) >= 0) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        /**
          * Normalizes an arbitrary string for use as an option name, ie makes
          * it lower-case (provided this section isn't case-sensitive) and trims
          * leading and trailing white space.
@@ -1003,24 +1008,13 @@ public class IniEditor {
 
     }
 
-    private interface Line {
-        public String toString();
-    }
-
-    private static final Line BLANK_LINE = new Line() {
-        public String toString() {
-            return "";
-        }
-    };
-
     private static class Option implements Line {
 
+        private static final String ILLEGAL_VALUE_CHARS = "\n\r";
         private String name;
         private String value;
         private char separator;
         private OptionFormat format;
-
-        private static final String ILLEGAL_VALUE_CHARS = "\n\r";
 
         public Option(String name, String value, char separator, OptionFormat format) {
             if (!validName(name, separator)) {
@@ -1030,6 +1024,16 @@ public class IniEditor {
             this.separator = separator;
             this.format = format;
             set(value);
+        }
+
+        private static boolean validName(String name, char separator) {
+            if (name.trim().equals("")) {
+                return false;
+            }
+            if (name.indexOf(separator) >= 0) {
+                return false;
+            }
+            return true;
         }
 
         public String name() {
@@ -1059,24 +1063,13 @@ public class IniEditor {
             return this.format.format(this.name, this.value, this.separator);
         }
 
-        private static boolean validName(String name, char separator) {
-            if (name.trim().equals("")) {
-                return false;
-            }
-            if (name.indexOf(separator) >= 0) {
-                return false;
-            }
-            return true;
-        }
-
     }
 
     private static class Comment implements Line {
 
+        private static final char DEFAULT_DELIMITER = '#';
         private String comment;
         private char delimiter;
-
-        private static final char DEFAULT_DELIMITER = '#';
 
         public Comment(String comment) {
             this(comment, DEFAULT_DELIMITER);

@@ -6,7 +6,7 @@ import android.media.AudioManager;
 
 import com.bluberry.adclient.App;
 import com.bluberry.adclient.Msg;
-import com.bluberry.adclient.RTKSourceInActivity;
+import com.bluberry.adclient.MainActivity;
 import com.bluberry.common.IOUtil;
 import com.bluberry.common.print;
 
@@ -26,11 +26,9 @@ import cs.comm.Cmd;
 import cs.comm.Command;
 
 public class CommandClient implements Runnable {
-    private String tag = "CommandClient";
-
-    private String serverMessage;
     public String serverIP = " "; //your computer IP address
-
+    private String tag = "CommandClient";
+    private String serverMessage;
     private OnMessageReceived mMessageListener = null;
     private boolean mRun = false;
 
@@ -162,7 +160,7 @@ public class CommandClient implements Runnable {
                     Calendar c = Calendar.getInstance();
                     c.setTime(sdf.parse(param));
                     System.out.println("cccc:" + c);
-                    AlarmManager am1 = (AlarmManager) RTKSourceInActivity.thiz.getSystemService(Context.ALARM_SERVICE);
+                    AlarmManager am1 = (AlarmManager) MainActivity.thiz.getSystemService(Context.ALARM_SERVICE);
                     am1.setTime(c.getTimeInMillis());
                     break;
                 case get_time:
@@ -177,15 +175,15 @@ public class CommandClient implements Runnable {
                     App.saveString("id", param);
                     break;
                 case get_screen:
-                    RTKSourceInActivity.thiz.sendMessage(Msg.MESSAGE_TakeScreenshot, this);
+                    MainActivity.thiz.sendMessage(Msg.MESSAGE_TakeScreenshot, this);
                     break;
 
                 case prev_scene:
-                    RTKSourceInActivity.thiz.sendMessage(Msg.MESSAGE_PREV_SCENE, this);
+                    MainActivity.thiz.sendMessage(Msg.MESSAGE_PREV_SCENE, this);
                     break;
 
                 case next_scene:
-                    RTKSourceInActivity.thiz.sendMessage(Msg.MESSAGE_NEXT_SCENE, this);
+                    MainActivity.thiz.sendMessage(Msg.MESSAGE_NEXT_SCENE, this);
                     break;
 
                 case set_volume:
@@ -213,7 +211,7 @@ public class CommandClient implements Runnable {
                     break;
 
                 case clear:
-                    RTKSourceInActivity.thiz.sendMessage(Msg.MESSAGE_NO_DATA, this);
+                    MainActivity.thiz.sendMessage(Msg.MESSAGE_NO_DATA, this);
 
                     try {
                         Process su;
@@ -262,6 +260,10 @@ public class CommandClient implements Runnable {
         return true;
     }
 
+    public interface OnMessageReceived {
+        public void messageReceived(String message);
+    }
+
     class Heartbeat implements Runnable {
         private PrintWriter out;
 
@@ -281,79 +283,4 @@ public class CommandClient implements Runnable {
             }
         }
     }
-
-    public interface OnMessageReceived {
-        public void messageReceived(String message);
-    }
 }
-
-/*
-import javax.swing.*;
-import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
-
-public class TCPServer extends Thread
-{
-    public static final int SERVER_PORT = 4444;
-    private boolean running = false;
-    private PrintWriter mOut;
-    private OnMessageReceived mMessageListener = null;
-    private boolean mRun = false;
-    PrintWriter out;
-
-    public TCPServer(OnMessageReceived listener){
-        this.mMessageListener = listener;
-    }
-
-
-    public static void main(String[] args) 
-    {
-        ServerBoard frame = new ServerBoard();
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.pack();
-        frame.setVisible(true);
-    }
-
-    public void sendMessage(String message){
-        if(mOut != null && !mOut.checkError()){
-            mOut.print(message);
-            mOut.flush();
-        }
-    }
-
-    @Override
-    public void run(){
-        super.run();
-        running = true;
-
-        try{
-            System.out.println("S: Connecting...");
-            ServerSocket serverSocket = new ServerSocket(SERVER_PORT);
-            Socket client = serverSocket.accept();
-            System.out.println("S: Receiving...");
-
-            try{
-                mOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(client.getOutputStream())),true);
-                BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-
-                while(running){
-                    String msg = in.readLine();
-                    if(msg != null && mMessageListener != null){
-                        mMessageListener.messageReceived(msg);
-                    }
-                }
-            }catch(Exception e){
-                e.printStackTrace();
-            }
-        }catch(Exception e){
-            e.printStackTrace();
-        }
-    }
-
-    public interface OnMessageReceived
-    {
-        public void messageReceived(String message);
-    }
-}
-*/

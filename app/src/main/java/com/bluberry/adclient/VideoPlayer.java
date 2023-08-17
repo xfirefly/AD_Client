@@ -15,13 +15,55 @@ import java.io.IOException;
 
 public class VideoPlayer implements SurfaceHolder.Callback {
     private final String TAG = "VideoPlayer";
-
+    MediaPlayer.OnPreparedListener mPreparedListener = new MediaPlayer.OnPreparedListener() {
+        public void onPrepared(MediaPlayer mp) {
+            Log.i("tt", "onPrepared");
+            mp.setLooping(true);
+            mp.start();
+        }
+    };
     private SurfaceView mSurfaceView = null;
     private SurfaceHolder mSurfaceHolder = null;
     private MediaPlayer mediaPlayer;
     private Context mContext;
-
     private String filePath;
+    private MediaPlayer.OnCompletionListener mCompletionListener = new MediaPlayer.OnCompletionListener() {
+        public void onCompletion(MediaPlayer mp) {
+            Log.i("tt", "onCompletion");
+            mp.reset();
+
+            try {
+                mediaPlayer.setDataSource(filePath);
+
+                mediaPlayer.prepareAsync();
+            } catch (IllegalArgumentException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (SecurityException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (IllegalStateException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+
+        }
+    };
+    private OnErrorListener mOnErrorListener = new OnErrorListener() {
+
+        @Override
+        public boolean onError(MediaPlayer mp, int what, int extra) {
+            Log.d("tt", "on error");
+
+            return false;
+        }
+    };
 
     public VideoPlayer(Context context, ViewGroup parent, int x, int y, int width, int height) {
         mContext = context;
@@ -221,53 +263,6 @@ public class VideoPlayer implements SurfaceHolder.Callback {
             Log.e(TAG, "IO Exception", e);
         }
     }
-
-    MediaPlayer.OnPreparedListener mPreparedListener = new MediaPlayer.OnPreparedListener() {
-        public void onPrepared(MediaPlayer mp) {
-            Log.i("tt", "onPrepared");
-            mp.setLooping(true);
-            mp.start();
-        }
-    };
-
-    private MediaPlayer.OnCompletionListener mCompletionListener = new MediaPlayer.OnCompletionListener() {
-        public void onCompletion(MediaPlayer mp) {
-            Log.i("tt", "onCompletion");
-            mp.reset();
-
-            try {
-                mediaPlayer.setDataSource(filePath);
-
-                mediaPlayer.prepareAsync();
-            } catch (IllegalArgumentException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch (SecurityException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch (IllegalStateException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch (Exception e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-
-        }
-    };
-
-    private OnErrorListener mOnErrorListener = new OnErrorListener() {
-
-        @Override
-        public boolean onError(MediaPlayer mp, int what, int extra) {
-            Log.d("tt", "on error");
-
-            return false;
-        }
-    };
 
     public void surfaceDestroyed(SurfaceHolder holder) {
         Log.i("tt", "surfaceDestroyed");

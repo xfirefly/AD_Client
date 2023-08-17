@@ -26,6 +26,8 @@ import android.widget.Toast;
 import com.bluberry.adclient.sp.SerialPortBiz;
 import com.bluberry.common.IOUtil;
 import com.bluberry.common.print;
+import com.bluberry.network.CommandClient;
+import com.bluberry.network.IpReceiver;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
@@ -53,25 +55,15 @@ import cs.ipc.Direction;
 import cs.ipc.Picture;
 import cs.ipc.Subtitle;
 import cs.ipc.Video;
-import com.bluberry.network.CommandClient;
-import com.bluberry.network.IpReceiver;
 
 import static com.bluberry.adclient.Reversed.reversed;
 
-//import org.joda.time.LocalTime;
-//import com.realtek.hardware.RtkHDMIRxManager;
-//import com.realtek.server.HDMIRxStatus;
-
 public class ADRender {
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-
-    // W:\rtk\150410\Android_1195_QA141201_1GB__TAG150410_20150415_Release\android\vendor\realtek\apps\RealtekSourceIn
     private static final String Timing_0000 = "00:00";
+    private static MainActivity rtk;
     private ViewGroup m_Root;
     private String TAG = "ADR";
-    private static RTKSourceInActivity rtk;
-
     private List<AdProgram> adList = new ArrayList<>();    // all ad
     private AdProgram currentAd = null;
     private Scene currentScene = null;
@@ -97,9 +89,218 @@ public class ADRender {
     private List<Thread> sceneThreads = new ArrayList<Thread>();
 
     private HashMap<String, Drawable> drawableMap = new HashMap<>();
+    private TextView tvTips = null;
+    public Handler adHandler = new Handler() {
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
 
-    public ADRender(RTKSourceInActivity rtkSourceInActivity) {
-        rtk = rtkSourceInActivity;
+            List<Scene> scList = new ArrayList<>();
+            List<AdProgram> scadList = new ArrayList<>();
+            //HashMap<Scene, AdProgram> scMap = new HashMap<>();
+
+            Msg usermsg = Msg.values()[msg.what];
+            print.i(TAG, "handle msg " + usermsg.toString() + " ");
+            switch (usermsg) {
+                case MESSAGE_PARSE_AD_DONE:
+                    break;
+
+                case MESSAGE_DRAW_AD:
+                    tvTips = null;
+
+                    endDrawAd(); //stop prev ad
+                    drawAdProgram((AdProgram) msg.obj);
+                    startSceneUpdater();
+                    break;
+
+                case MESSAGE_DRAW_SCENE_EX:
+                    tvTips = null;
+				/*if (msg.arg1 >= currentAd.scene.size() )
+					break;*/
+
+                    endDrawAd(); //stop prev ad
+                    drawAdProgram((AdProgram) msg.obj);
+                    try {
+                        drawScene(currentAd.scene.get(msg.arg1));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    break;
+
+                case MESSAGE_DRAW_SCENE:
+                    drawScene((Scene) msg.obj);
+                    break;
+
+/*
+			case MESSAGE_PARSE_AD_FINISH:
+				tvTips = null;
+
+				currentAd = (AdProgram) msg.obj;
+				drawAdProgram();
+				break;
+
+			case MESSAGE_ADD_TIMING_SCENE:
+				AdProgram prog = (AdProgram) msg.obj;
+				if (currentAd == null) {
+					print.e(TAG, "currentAd is null, ERROR");
+					return;
+				}
+
+				for (Scene sne : prog.scene) {
+					currentAd.scene.add(sne);
+					print.i(TAG, "add new timing scene: " + sne.timing);
+				}
+				break; */
+
+                case MESSAGE_DRAW_BG:
+                    drawBackImage((Drawable) msg.obj);
+                    break;
+
+                case MESSAGE_DRAW_IMAGE:
+                    PictureUpdater iu = (PictureUpdater) msg.obj;
+                    drawPicture(iu.getImageView(), iu.getDrawableImg());
+                    break;
+
+                case MESSAGE_DRAW_VIDEO:
+                    VideoUpdater vu = (VideoUpdater) msg.obj;
+                    playVideo(vu.vPlayer, "");
+                    break;
+
+                case MESSAGE_TakeScreenshot:
+                    Thread ipReceiverThread = new Thread(new TakeScreenshot((CommandClient) msg.obj));
+                    ipReceiverThread.start();
+
+                    //rtk.captureHdmiIN();
+                    break;
+
+                case MESSAGE_STOP_AND_RENAME:
+
+                    break;
+                case MESSAGE_RECV_JSON_BEGIN:
+                    if (App.SERIAL_PORT)
+                        break;
+
+                    //endDrawAd();
+                    //showTips(App.getInstance().getResources().getText(R.string.wait));
+                    Toast.makeText(rtk, R.string.wait, Toast.LENGTH_LONG).show();
+                    break;
+                case MESSAGE_RECV_JSON_PROGRESS:
+                    if (App.SERIAL_PORT)
+                        break;
+
+                    if (tvTips != null) {
+                        tvTips.setText("接收文件, 请稍候...(" + msg.obj + "%)");
+                    }
+                    break;
+                case MESSAGE_RECV_JSON_END:
+                    if (App.SERIAL_PORT)
+                        break;
+
+                    if (tvTips != null) {
+                        tvTips.setText("解析文件, 请稍候...");
+                    }
+                    break;
+
+                case MESSAGE_NO_DATA:
+                    endDrawAd();
+                    showTips(App.getInstance().getResources().getText(R.string.no_data));
+                    //Toast.makeText(rtk, R.string.no_data, Toast.LENGTH_LONG).show();
+
+                    sendEmptyMessageDelayed(Msg.MESSAGE_ADD_HDMI.ordinal(), 10);
+                    break;
+
+                case MESSAGE_ADD_HDMI:
+
+/*				RtkHDMIRxManager rxm = new RtkHDMIRxManager();
+				HDMIRxStatus rxStatus = rxm.getHDMIRxStatus();
+				if (rxStatus.status == HDMIRxStatus.STATUS_READY) {
+					Video video = new Video();
+					video.x = video.y = 0;
+					video.w = 1920;
+					video.h = 1080;
+					rtk.addHDMI(video);
+				}
+				rxm.release();*/
+                    break;
+
+                case MESSAGE_PREV_SCENE:
+//				for (int i = 0; i < adList.size(); i++) {
+//					if (adList.get(i).scene.get(0).drawing) {
+//						if (i <= 0) { //已经是播放第一个场景
+//							break;
+//						} else {
+//							switchPrevNextScene(i - 1);
+//							break;
+//						}
+//					}
+//				}
+
+                    for (int i = 0; i < adList.size(); i++) {
+                        for (Scene sc : adList.get(i).scene) {
+                            scList.add(sc);
+                            scadList.add(adList.get(i));
+                            //scMap.put(sc, adList.get(i));
+                        }
+                    }
+
+                    for (int i = 0; i < scList.size(); i++) {
+                        if (scList.get(i).drawing) {
+                            if (i == 0) {
+                                break;
+                            } else {
+
+                                Message msgx = adHandler.obtainMessage(Msg.MESSAGE_DRAW_SCENE_EX.ordinal(), scadList.get(i - 1));
+                                msgx.arg1 = i - 1;
+                                msgx.sendToTarget();
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                case MESSAGE_NEXT_SCENE:
+//				for (int i = 0; i < adList.size(); i++) {
+//					if (adList.get(i).scene.get(0).drawing) {
+//						if (i >= (adList.size() - 1)) { //已经是播放最后一个场景
+//							break;
+//						} else {
+//							switchPrevNextScene(i + 1);
+//							break;
+//						}
+//					}
+//				}
+                    for (int i = 0; i < adList.size(); i++) {
+                        for (Scene sc : adList.get(i).scene) {
+                            scList.add(sc);
+                            scadList.add(adList.get(i));
+                        }
+                    }
+
+                    for (int i = 0; i < scList.size(); i++) {
+                        if (scList.get(i).drawing) {
+                            if (i == (scList.size() - 1)) {
+                                break;
+                            } else {
+
+                                Message msgx = adHandler.obtainMessage(Msg.MESSAGE_DRAW_SCENE_EX.ordinal(), scadList.get(i + 1));
+                                msgx.arg1 = i + 1;
+                                msgx.sendToTarget();
+                                break;
+                            }
+                        }
+                    }
+                    break;
+
+                case MESSAGE_CHANGE_SUBTITLE_VISABLE:
+                    enableSubtitle((Boolean) msg.obj);
+                    break;
+                default:
+                    break;
+            }
+        }
+    };
+
+    public ADRender(MainActivity mainActivity) {
+        rtk = mainActivity;
         m_Root = rtk.m_Root;
     }
 
@@ -172,7 +373,6 @@ public class ADRender {
 
         android.os.Process.killProcess(android.os.Process.myPid());
     }
-
 
     /**
      * 不管什么场景发过来, 都添加到List, 定时场景等待到时再播放,  轮播和主界面发送的单个场景直接播放
@@ -591,7 +791,7 @@ public class ADRender {
 		try {
 			threadSceneUpdater.join();
 		} catch (InterruptedException e) {
-			
+
 			e.printStackTrace();
 		}
 
@@ -607,7 +807,6 @@ public class ADRender {
         //adHandler.sendMessage(msg);
     }
 
-
     private void showTips(CharSequence cs) {
 
         tvTips = new TextView(rtk);
@@ -622,216 +821,12 @@ public class ADRender {
         m_Root.addView(tvTips, paramss);
     }
 
-    public Handler adHandler = new Handler() {
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-
-            List<Scene> scList = new ArrayList<>();
-            List<AdProgram> scadList = new ArrayList<>();
-            //HashMap<Scene, AdProgram> scMap = new HashMap<>();
-
-            Msg usermsg = Msg.values()[msg.what];
-            print.i(TAG, "handle msg " + usermsg.toString() + " ");
-            switch (usermsg) {
-                case MESSAGE_PARSE_AD_DONE:
-                    break;
-
-                case MESSAGE_DRAW_AD:
-                    tvTips = null;
-
-                    endDrawAd(); //stop prev ad
-                    drawAdProgram((AdProgram) msg.obj);
-                    startSceneUpdater();
-                    break;
-
-                case MESSAGE_DRAW_SCENE_EX:
-                    tvTips = null;
-				/*if (msg.arg1 >= currentAd.scene.size() )
-					break;*/
-
-                    endDrawAd(); //stop prev ad
-                    drawAdProgram((AdProgram) msg.obj);
-                    try {
-                        drawScene(currentAd.scene.get(msg.arg1));
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-
-                    break;
-
-                case MESSAGE_DRAW_SCENE:
-                    drawScene((Scene) msg.obj);
-                    break;
-
-/*
-			case MESSAGE_PARSE_AD_FINISH:
-				tvTips = null;
-
-				currentAd = (AdProgram) msg.obj;
-				drawAdProgram();
-				break;
-
-			case MESSAGE_ADD_TIMING_SCENE:
-				AdProgram prog = (AdProgram) msg.obj;
-				if (currentAd == null) {
-					print.e(TAG, "currentAd is null, ERROR");
-					return;
-				}
-
-				for (Scene sne : prog.scene) {
-					currentAd.scene.add(sne);
-					print.i(TAG, "add new timing scene: " + sne.timing);
-				}
-				break; */
-
-                case MESSAGE_DRAW_BG:
-                    drawBackImage((Drawable) msg.obj);
-                    break;
-
-                case MESSAGE_DRAW_IMAGE:
-                    PictureUpdater iu = (PictureUpdater) msg.obj;
-                    drawPicture(iu.getImageView(), iu.getDrawableImg());
-                    break;
-
-                case MESSAGE_DRAW_VIDEO:
-                    VideoUpdater vu = (VideoUpdater) msg.obj;
-                    playVideo(vu.vPlayer, "");
-                    break;
-
-                case MESSAGE_TakeScreenshot:
-                    Thread ipReceiverThread = new Thread(new TakeScreenshot((CommandClient) msg.obj));
-                    ipReceiverThread.start();
-
-                    //rtk.captureHdmiIN();
-                    break;
-
-                case MESSAGE_STOP_AND_RENAME:
-
-                    break;
-                case MESSAGE_RECV_JSON_BEGIN:
-                    if (App.SERIAL_PORT)
-                        break;
-
-                    //endDrawAd();
-                    //showTips(App.getInstance().getResources().getText(R.string.wait));
-                    Toast.makeText(rtk, R.string.wait, Toast.LENGTH_LONG).show();
-                    break;
-                case MESSAGE_RECV_JSON_PROGRESS:
-                    if (App.SERIAL_PORT)
-                        break;
-
-                    if (tvTips != null) {
-                        tvTips.setText("接收文件, 请稍候...(" + msg.obj + "%)");
-                    }
-                    break;
-                case MESSAGE_RECV_JSON_END:
-                    if (App.SERIAL_PORT)
-                        break;
-
-                    if (tvTips != null) {
-                        tvTips.setText("解析文件, 请稍候...");
-                    }
-                    break;
-
-                case MESSAGE_NO_DATA:
-                    endDrawAd();
-                    showTips(App.getInstance().getResources().getText(R.string.no_data));
-                    //Toast.makeText(rtk, R.string.no_data, Toast.LENGTH_LONG).show();
-
-                    sendEmptyMessageDelayed(Msg.MESSAGE_ADD_HDMI.ordinal(), 10);
-                    break;
-
-                case MESSAGE_ADD_HDMI:
-
-/*				RtkHDMIRxManager rxm = new RtkHDMIRxManager();
-				HDMIRxStatus rxStatus = rxm.getHDMIRxStatus();
-				if (rxStatus.status == HDMIRxStatus.STATUS_READY) {
-					Video video = new Video();
-					video.x = video.y = 0;
-					video.w = 1920;
-					video.h = 1080;
-					rtk.addHDMI(video);
-				}
-				rxm.release();*/
-                    break;
-
-                case MESSAGE_PREV_SCENE:
-//				for (int i = 0; i < adList.size(); i++) {
-//					if (adList.get(i).scene.get(0).drawing) {
-//						if (i <= 0) { //已经是播放第一个场景
-//							break;
-//						} else {
-//							switchPrevNextScene(i - 1);
-//							break;
-//						}
-//					}
-//				}
-
-                    for (int i = 0; i < adList.size(); i++) {
-                        for (Scene sc : adList.get(i).scene) {
-                            scList.add(sc);
-                            scadList.add(adList.get(i));
-                            //scMap.put(sc, adList.get(i));
-                        }
-                    }
-
-                    for (int i = 0; i < scList.size(); i++) {
-                        if (scList.get(i).drawing) {
-                            if (i == 0) {
-                                break;
-                            } else {
-
-                                Message msgx = adHandler.obtainMessage(Msg.MESSAGE_DRAW_SCENE_EX.ordinal(), scadList.get(i - 1));
-                                msgx.arg1 = i - 1;
-                                msgx.sendToTarget();
-                                break;
-                            }
-                        }
-                    }
-                    break;
-                case MESSAGE_NEXT_SCENE:
-//				for (int i = 0; i < adList.size(); i++) {
-//					if (adList.get(i).scene.get(0).drawing) {
-//						if (i >= (adList.size() - 1)) { //已经是播放最后一个场景
-//							break;
-//						} else {
-//							switchPrevNextScene(i + 1);
-//							break;
-//						}
-//					}
-//				}
-                    for (int i = 0; i < adList.size(); i++) {
-                        for (Scene sc : adList.get(i).scene) {
-                            scList.add(sc);
-                            scadList.add(adList.get(i));
-                        }
-                    }
-
-                    for (int i = 0; i < scList.size(); i++) {
-                        if (scList.get(i).drawing) {
-                            if (i == (scList.size() - 1)) {
-                                break;
-                            } else {
-
-                                Message msgx = adHandler.obtainMessage(Msg.MESSAGE_DRAW_SCENE_EX.ordinal(), scadList.get(i + 1));
-                                msgx.arg1 = i + 1;
-                                msgx.sendToTarget();
-                                break;
-                            }
-                        }
-                    }
-                    break;
-
-                case MESSAGE_CHANGE_SUBTITLE_VISABLE:
-                    enableSubtitle((Boolean) msg.obj);
-                    break;
-                default:
-                    break;
-            }
+    public void reDrawCurrentScene() {
+        if (rtk.currHdmiIn != null && currentScene != null) {    //re-draw scene
+            //rtk.addHDMI(rtk.currHdmiIn);
+            sendMessage(Msg.MESSAGE_DRAW_SCENE, currentScene);
         }
-    };
-
-    private TextView tvTips = null;
+    }
 
     // read all scene, parse
     public class AdJsonParser implements Runnable {
@@ -907,18 +902,18 @@ public class ADRender {
         private Drawable drawable;
         private String dir;
 
+        public PictureUpdater(String d, ImageView iv, Picture p) {
+            picture = p;
+            imageView = iv;
+            dir = d;
+        }
+
         public ImageView getImageView() {
             return imageView;
         }
 
         public Drawable getDrawableImg() {
             return drawable;
-        }
-
-        public PictureUpdater(String d, ImageView iv, Picture p) {
-            picture = p;
-            imageView = iv;
-            dir = d;
         }
 
         public void run() {
@@ -950,11 +945,10 @@ public class ADRender {
     }
 
     class VideoUpdater implements Runnable {
+        public VideoPlayer vPlayer;
+        public int index;
         private Video video;
         private String dir;
-        public VideoPlayer vPlayer;
-
-        public int index;
 
         public VideoUpdater(String d, VideoPlayer vp, Video v, int i) {
             dir = d;
@@ -998,11 +992,6 @@ public class ADRender {
 
     class SceneUpdater implements Runnable {
         private AdProgram ad;
-
-        public SceneUpdater(AdProgram ad) {
-            this.ad = ad;
-        }
-
         /*
         public void run() {
             if (ad.scene.size() == 1) { // 只有一个场景
@@ -1043,6 +1032,9 @@ public class ADRender {
         }*/
         private int sleepTime = -1;
         private int sceneIndex = 0; // 轮播场景时, 下一个需要播放场景的索引
+        public SceneUpdater(AdProgram ad) {
+            this.ad = ad;
+        }
 
         private void loopPlayback_tk() {
             if (sceneIndex < ad.scene.size()) {
@@ -1063,18 +1055,7 @@ public class ADRender {
                 print.v(TAG, "只有一个场景 ");
                 sendMessage(Msg.MESSAGE_DRAW_SCENE, ad.scene.get(0));
             }
-			/*
-			else if (ad.sceneIntval <= 0) { //定时播放而且场景>=2, 需要播放里面的某个场景
-				String d = nowTime();
-				print.v(TAG, "定时播放, 需要播放里面的某个场景");
-				for (Scene sc: ad.scene) {
-					if (d.equals(sc.timing)) {
-						print.v(TAG, "定时播放, 需要播放里面的某个场景 2");
-						sendMessage(Msg.MESSAGE_DRAW_SCENE, sc);
-						break;
-					}
-				}
-			} */
+
 
             boolean alive = true;
             while (alive) {
@@ -1086,12 +1067,7 @@ public class ADRender {
                             sleepTime = 0;
                         }
                     }
-/*
-					if (App.tuke) { //只对时间点做 字符串比较
-						timingPlayback_tk();
-					} else { //比较当前时间点是否在2个时间点之间
-						timingPlayback();
-					}	*/
+
 
                     Thread.sleep(1000);
                     sleepTime++;
@@ -1114,13 +1090,6 @@ public class ADRender {
             }
         }
 
-        //		private LocalTime timeParse(String str) {
-        //			if (str.compareTo(Timing_0000) == 0) { //表示本场景不需要 定时播放
-        //				return LocalTime.parse("23:59");
-        //			}
-        //
-        //			return LocalTime.parse(str);
-        //		}
 
         private void timingPlayback_tk() {
             String d = nowTime();
@@ -1217,7 +1186,6 @@ public class ADRender {
         }
 
     }
-
 
     private class GpioReadThread extends Thread {
         boolean subEnable = true;
@@ -1333,50 +1301,5 @@ public class ADRender {
             }
         }
     }
-
-    public void reDrawCurrentScene() {
-        if (rtk.currHdmiIn != null && currentScene != null) {    //re-draw scene
-            //rtk.addHDMI(rtk.currHdmiIn);
-            sendMessage(Msg.MESSAGE_DRAW_SCENE, currentScene);
-        }
-    }
-
-/*	private boolean hdmiRxPlugged = false;
-	private BroadcastReceiver hdmiRxHotPlugReceiver = new BroadcastReceiver() {
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			hdmiRxPlugged = intent.getBooleanExtra(HDMIRxStatus.EXTRA_HDMIRX_PLUGGED_STATE, false);
-			if (hdmiRxPlugged) {
-				Log.d(TAG, "HDMI Rx is plugged in  \n");
-
-				//if (hdmiRxPlugged && !isBusy() )
-				if (rtk.currHdmiIn != null && currentScene != null) {	//re-draw scene
-					//rtk.addHDMI(rtk.currHdmiIn);
-					reDrawCurrentScene();
-				}
-				else
-				{
-					Log.d(TAG, "do addHDMI \n");
-
-					Video video = new Video();
-					video.x = video.y = 0;
-					video.w = 1920;
-					video.h = 1080;
-					//rtk.addHDMI(video);
-
-					if (rtk.currHdmiIn != null && currentScene != null) {	//re-draw scene
-						//rtk.addHDMI(rtk.currHdmiIn);
-						sendMessage(Msg.MESSAGE_DRAW_SCENE, currentScene );
-					}
-				}
-			} else {
-				Log.d(TAG, "HDMI Rx is pulled out\n");
-				rtk.stopHdmiIn();
-				//rtk.currHdmiIn = null;
-			}
-		}
-	};*/
-
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
 }

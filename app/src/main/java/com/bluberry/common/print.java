@@ -7,16 +7,6 @@ import android.util.Log;
  */
 public class print {
 
-    // 锁，是否打开Log日志输出
-    private static boolean LogOn = true;
-
-    // 是否打开VERBOSE输出
-    private static boolean LogOn_VERBOSE = true;
-
-    // 是否打开debug输出
-    private static boolean LogOn_DEBUG = true;
-
-    /**** 5中Log日志类型 *******/
     /**
      * 调试日志类型
      */
@@ -29,6 +19,8 @@ public class print {
      * 信息日志类型
      */
     private static final int INFO = 113;
+
+    /**** 5中Log日志类型 *******/
     /**
      * 详细信息日志类型
      */
@@ -37,6 +29,12 @@ public class print {
      * 警告调试日志类型
      */
     private static final int WARN = 115;
+    // 锁，是否打开Log日志输出
+    private static boolean LogOn = true;
+    // 是否打开VERBOSE输出
+    private static boolean LogOn_VERBOSE = true;
+    // 是否打开debug输出
+    private static boolean LogOn_DEBUG = true;
 
     /**
      * 显示，打印日志

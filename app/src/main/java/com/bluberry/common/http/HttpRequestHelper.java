@@ -75,20 +75,27 @@ import java.util.concurrent.TimeUnit;
  * 在做耗时较长的http请求交互的时候，重新new一个httpClient对象，而不是用一个单例的httpclient对象进行管理所有的http请求。
  */
 public class HttpRequestHelper {
-    private static final String TAG = "HttpRequestHelper";
-
     public final static String UA_IPAD = "Mozilla/5.0 (iPad; CPU OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3";
     public final static String UA_CHROME = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.62 Safari/537.36";
-
     public final static String REF_BAIDU = "http://www.baidu.com/";
+    private static final String TAG = "HttpRequestHelper";
 
     // private IdleConnectionMonitorThread monitorThread;
-
+    private static HttpRequestHelper instance;
     private DefaultHttpClient httpClient;
     private String refererURL = REF_BAIDU;
 
-    private static HttpRequestHelper instance;
 
+    public HttpRequestHelper() {
+        httpClient = createHttpClient(UA_CHROME);
+
+        // monitorThread = new IdleConnectionMonitorThread();
+        // monitorThread.start();
+    }
+
+    public HttpRequestHelper(String userAgent) {
+        httpClient = createHttpClient(userAgent);
+    }
 
     /**
      * Returns singleton class instance
@@ -104,15 +111,60 @@ public class HttpRequestHelper {
         return instance;
     }
 
-    public HttpRequestHelper() {
-        httpClient = createHttpClient(UA_CHROME);
+    // unit test
+    public static void test() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final HttpRequestHelper httpReq = new HttpRequestHelper();
+                class GetThread extends Thread {
+                    private String url;
 
-        // monitorThread = new IdleConnectionMonitorThread();
-        // monitorThread.start();
-    }
+                    public GetThread(String url) {
+                        this.url = url;
+                    }
 
-    public HttpRequestHelper(String userAgent) {
-        httpClient = createHttpClient(userAgent);
+                    @Override
+                    public void run() {
+                        // String file =
+                        // Environment.getExternalStorageDirectory().getAbsolutePath()
+                        // + "/xzq";
+                        String str = httpReq.getUTF8String(url);
+                        if (str != null)
+                            print.e(TAG, "GOT : " + str.substring(0, 30));
+                    }
+                }
+
+                print.e(TAG, "test begin");
+
+                final int LEN = 200;
+
+                // create a thread for each URI
+                Thread[] threads = new Thread[LEN];
+                for (int i = 0; i < threads.length; i++) {
+                    threads[i] = new GetThread("http://www.baidu.com/");
+                }
+
+                // start the threads
+                for (int j = 0; j < threads.length; j++) {
+                    threads[j].start();
+                }
+
+                // join the threads
+                for (int j = 0; j < threads.length; j++) {
+                    try {
+                        threads[j].join();
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+
+                httpReq.shutdown();
+                print.e(TAG, "test end ");
+
+            }
+        }).start();
     }
 
     /**
@@ -166,15 +218,15 @@ public class HttpRequestHelper {
         return new DefaultHttpClient(conMgr, params);
     }
 
-    public void clearCookies() {
-        httpClient.getCookieStore().clear();
-    }
-
     /*
      * public void abort() { try { if (httpClient != null) { print.i(TAG,
      * "Abort."); httpPost.abort(); } } catch (Throwable e) {
      * e.printStackTrace(); print.e(TAG, "Failed to abort", e); } }
      */
+
+    public void clearCookies() {
+        httpClient.getCookieStore().clear();
+    }
 
     /**
      * post string
@@ -240,13 +292,11 @@ public class HttpRequestHelper {
         return getString(url, "UTF-8");
     }
 
-
     public String getUTF8String(String url, String referer) {
         refererURL = referer;
 
         return getString(url, "UTF-8");
     }
-
 
     /**
      * get gbk encode string
@@ -280,7 +330,6 @@ public class HttpRequestHelper {
 
         return null;
     }
-
 
     /**
      * get stream
@@ -368,7 +417,6 @@ public class HttpRequestHelper {
 
         return result;
     }
-
 
     /**
      * return UTF-8 encode string
@@ -478,61 +526,5 @@ public class HttpRequestHelper {
                 notifyAll();
             }
         }
-    }
-
-    // unit test
-    public static void test() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                final HttpRequestHelper httpReq = new HttpRequestHelper();
-                class GetThread extends Thread {
-                    private String url;
-
-                    public GetThread(String url) {
-                        this.url = url;
-                    }
-
-                    @Override
-                    public void run() {
-                        // String file =
-                        // Environment.getExternalStorageDirectory().getAbsolutePath()
-                        // + "/xzq";
-                        String str = httpReq.getUTF8String(url);
-                        if (str != null)
-                            print.e(TAG, "GOT : " + str.substring(0, 30));
-                    }
-                }
-
-                print.e(TAG, "test begin");
-
-                final int LEN = 200;
-
-                // create a thread for each URI
-                Thread[] threads = new Thread[LEN];
-                for (int i = 0; i < threads.length; i++) {
-                    threads[i] = new GetThread("http://www.baidu.com/");
-                }
-
-                // start the threads
-                for (int j = 0; j < threads.length; j++) {
-                    threads[j].start();
-                }
-
-                // join the threads
-                for (int j = 0; j < threads.length; j++) {
-                    try {
-                        threads[j].join();
-                    } catch (InterruptedException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
-                }
-
-                httpReq.shutdown();
-                print.e(TAG, "test end ");
-
-            }
-        }).start();
     }
 }

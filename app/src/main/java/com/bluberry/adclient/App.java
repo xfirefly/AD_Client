@@ -21,33 +21,25 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.concurrent.Executor;
-//import com.realtek.hardware.RtkHDMIManager;
 
 public class App extends Application {
     //============== config ==============
     //public final static boolean WAN = true;
     public final static boolean HDMI = false;
     public final static boolean SERIAL_PORT = false;
-
-
-    //////////////////////////////////////////////////
-    private final static String TAG = "App";
-    private static App instance;
-    public static volatile boolean Alive = false;
-
-    private HashMap<String, Typeface> fontHashMap;
-
-    public static Executor IpRecvrr;
-
     //所有ad zip 解压到本目录下, 按数字递增取文件夹名
     public static final String AdDir = Environment.getExternalStorageDirectory().getAbsolutePath() + "/ad_bluberry/";
-
-    //public static String unzipDir = Environment.getExternalStorageDirectory().getAbsolutePath() + "/ad_bluberry/";
-    //public static String unzipTmp = Environment.getExternalStorageDirectory().getAbsolutePath() + "/ad_bluberry_tmp/";
-    //public static String unzipDirEx = Environment.getExternalStorageDirectory().getAbsolutePath() + "/ad_bluberry_ex/";
-
+    //////////////////////////////////////////////////
+    private final static String TAG = "App";
+    public static volatile boolean Alive = false;
+    public static Executor IpRecvrr;
     public static String zipFile = Environment.getExternalStorageDirectory().getAbsolutePath() + "/ad_bluberry_z.zip";
     public static String apkFile = Environment.getExternalStorageDirectory().getAbsolutePath() + "/ad_bluberry_z.apk";
+
+    private static App instance;
+    private HashMap<String, Typeface> fontHashMap;
+    private String imageCacheDir = null;
+    private Activity currentActivity = null;
 
     // 获取可用文件夹名称
     public static String getNextDir() {
@@ -80,6 +72,70 @@ public class App extends Application {
     }
 
     /**
+     * @return The Application Instance
+     */
+    public static App getInstance() {
+        return instance;
+    }
+
+    public static Context getContext() {
+        return instance.getApplicationContext();
+    }
+
+    public static void saveString(String key, String value) {
+
+        getInstance().savePref("adclient", key, value);
+    }
+
+    public static String getString(String key) {
+
+        return getInstance().getPref("adclient", key);
+    }
+
+    public static void saveInt(String key, int value) {
+        saveString(key, String.valueOf(value));
+    }
+
+    public static int getInt(String key) {
+        return Integer.valueOf(getString(key));
+    }
+
+    public static void RunAsApp(String cmds) {
+        print.w(TAG, "cmds " + cmds);
+
+        try {
+            Process su = Runtime.getRuntime().exec("su");
+            DataOutputStream outputStream = new DataOutputStream(su.getOutputStream());
+
+            outputStream.writeBytes(cmds + "\n");
+            outputStream.flush();
+
+            outputStream.writeBytes("exit\n");
+            outputStream.flush();
+            su.waitFor();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void installApk(String filename) {
+        File file = new File(filename);
+        if (file.exists()) {
+            try {
+                final String command = "pm install -r " + file.getAbsolutePath();
+                Process proc = Runtime.getRuntime().exec(new String[]{"su", "-c", command});
+                proc.waitFor();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
      * 不要执行太多代码,影响启动速度
      */
     @Override
@@ -89,13 +145,7 @@ public class App extends Application {
         Alive = true;
 
         fontHashMap = new HashMap<String, Typeface>();
-        //		fontHashMap.put("simkai.ttf", simkai);
-        //		fontHashMap.put("msyh.ttf", msyh);
-        //		fontHashMap.put("simsun.ttf", simsun);
-        //		fontHashMap.put("simhei.ttf", simhei);
-        //		fontHashMap.put("pingfang.ttf", pingfang);
 
-        //IpRecvrr = Executors.newSingleThreadExecutor();
 
         File d = new File(AdDir);
         if (!d.exists()) {
@@ -130,24 +180,11 @@ public class App extends Application {
     }
 
     /**
-     * @return The Application Instance
-     */
-    public static App getInstance() {
-        return instance;
-    }
-
-    /**
      * @return the main resources from the App
      */
     public Resources getAppResources() {
         return instance.getResources();
     }
-
-    public static Context getContext() {
-        return instance.getApplicationContext();
-    }
-
-    private String imageCacheDir = null;
 
     public String getImageCacheDir() {
         if (imageCacheDir != null) {
@@ -210,24 +247,6 @@ public class App extends Application {
             }
         }
         return false;
-    }
-
-    public static void saveString(String key, String value) {
-
-        getInstance().savePref("adclient", key, value);
-    }
-
-    public static String getString(String key) {
-
-        return getInstance().getPref("adclient", key);
-    }
-
-    public static void saveInt(String key, int value) {
-        saveString(key, String.valueOf(value));
-    }
-
-    public static int getInt(String key) {
-        return Integer.valueOf(getString(key));
     }
 
     /**
@@ -297,8 +316,6 @@ public class App extends Application {
         return instance.getFilesDir().getAbsolutePath();
     }
 
-    private Activity currentActivity = null;
-
     /**
      * for LanmeiHome
      *
@@ -310,41 +327,6 @@ public class App extends Application {
 
     public void setCurrentActivity(Activity activity) {
         currentActivity = activity;
-    }
-
-    public static void RunAsApp(String cmds) {
-        print.w(TAG, "cmds " + cmds);
-
-        try {
-            Process su = Runtime.getRuntime().exec("su");
-            DataOutputStream outputStream = new DataOutputStream(su.getOutputStream());
-
-            outputStream.writeBytes(cmds + "\n");
-            outputStream.flush();
-
-            outputStream.writeBytes("exit\n");
-            outputStream.flush();
-            su.waitFor();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void installApk(String filename) {
-        File file = new File(filename);
-        if (file.exists()) {
-            try {
-                final String command = "pm install -r " + file.getAbsolutePath();
-                Process proc = Runtime.getRuntime().exec(new String[]{"su", "-c", command});
-                proc.waitFor();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
     }
 
 }

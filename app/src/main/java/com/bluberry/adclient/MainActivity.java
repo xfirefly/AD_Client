@@ -16,8 +16,8 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-import com.bluberry.setup.ShowOptionMenu;
 import com.bluberry.common.print;
+import com.bluberry.setup.ShowOptionMenu;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -27,11 +27,41 @@ import java.util.Calendar;
 
 import cs.ipc.Video;
 
-public class RTKSourceInActivity extends Activity {
+public class MainActivity extends Activity {
+
+    private static final long SCREENSHOT_SLOT = 200;
+    /////////////////////////////////////////////////////////////////////
+    public static MainActivity thiz;
+    //private HDMIRxPlayer m_HDMIRxPlayer = null;
+    private final Handler mHandler = new Handler();
+    private final Runnable mScreenShot = new Runnable() {
+        @Override
+        public void run() {
+
+            CaptureTask capTask = new CaptureTask(1, 0, 0, 1280, 720, 1280, 720);
+            capTask.execute();
+            //mHandler.postDelayed(this, SCREENSHOT_SLOT);
+        }
+    };
+    public Video currHdmiIn;
+    public Handler handimpl = new Handler();
+    public ViewGroup m_Root;
+    boolean subEnable = true;
+    private ADRender adRender;
+    private ShowOptionMenu optionWindow = null; //显示 选源的UI类
+    private Runnable closeshowSourceWindow = new Runnable() {
+        @Override
+        public void run() {
+            closeOptionDialog();
+        }
+    };
+    private String TAG = "HDMIRxActivity";
+    private byte[] mCapture;
+    private Toast mToast;
 
     /////////////////////////////////////////////////////////////////////
-    public static RTKSourceInActivity thiz;
-    private ADRender adRender;
+    private boolean mIsFullScreen = true;
+    private int scrWidth, scrHeight;
 
     public void sendMessage(Msg m, Object obj) {
         adRender.sendMessage(m, obj);
@@ -44,8 +74,6 @@ public class RTKSourceInActivity extends Activity {
     public synchronized void parseJson(String dir, boolean add) {
         adRender.parseJson(dir, add);
     }
-
-    public Video currHdmiIn;
 
     public void addHDMI(Video s) {
         if (!App.HDMI) {
@@ -64,15 +92,11 @@ public class RTKSourceInActivity extends Activity {
         print.e(TAG, "add hdmi " + s.x + " " + s.y + " " + s.w + " " + s.h);
     }
 
-    private ShowOptionMenu optionWindow = null; //显示 选源的UI类
-
     @Override
     public boolean dispatchKeyShortcutEvent(KeyEvent event) {
         Log.d(TAG, "dispatchKeyShortcutEvent() called with: event = [" + event + "]");
         return super.dispatchKeyShortcutEvent(event);
     }
-
-    boolean subEnable = true;
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -105,45 +129,10 @@ public class RTKSourceInActivity extends Activity {
         return super.onKeyDown(keyCode, event);
     }
 
-    private Runnable closeshowSourceWindow = new Runnable() {
-        @Override
-        public void run() {
-            closeOptionDialog();
-        }
-    };
-
     public void closeOptionDialog() {
         handimpl.removeCallbacks(closeshowSourceWindow);
         optionWindow.close();
     }
-
-    public Handler handimpl = new Handler();
-
-    /////////////////////////////////////////////////////////////////////
-
-    private String TAG = "HDMIRxActivity";
-    public ViewGroup m_Root;
-    //private HDMIRxPlayer m_HDMIRxPlayer = null;
-    private final Handler mHandler = new Handler();
-    private byte[] mCapture;
-    private static final long SCREENSHOT_SLOT = 200;
-    private Toast mToast;
-    private boolean mIsFullScreen = true;
-
-    private final Runnable mScreenShot = new Runnable() {
-        @Override
-        public void run() {
-/*			if (m_HDMIRxPlayer == null)
-				return;
-			if (m_HDMIRxPlayer.isPlaying() == false) {
-				mHandler.postDelayed(this, SCREENSHOT_SLOT);
-				return;
-			}*/
-            CaptureTask capTask = new CaptureTask(1, 0, 0, 1280, 720, 1280, 720);
-            capTask.execute();
-            //mHandler.postDelayed(this, SCREENSHOT_SLOT);
-        }
-    };
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -176,8 +165,6 @@ public class RTKSourceInActivity extends Activity {
         /////////////////////////////////////////////////////////////////////////
 
     }
-
-    private int scrWidth, scrHeight;
 
     @Override
     public void onStop() {

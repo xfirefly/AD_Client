@@ -11,6 +11,10 @@ public class Reversed<T> implements Iterable<T> {
         this.original = original;
     }
 
+    public static <T> Reversed<T> reversed(List<T> original) {
+        return new Reversed<T>(original);
+    }
+
     public Iterator<T> iterator() {
         final ListIterator<T> i = original.listIterator(original.size());
 
@@ -27,9 +31,5 @@ public class Reversed<T> implements Iterable<T> {
                 i.remove();
             }
         };
-    }
-
-    public static <T> Reversed<T> reversed(List<T> original) {
-        return new Reversed<T>(original);
     }
 }

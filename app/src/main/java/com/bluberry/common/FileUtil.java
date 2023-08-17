@@ -107,12 +107,6 @@ public class FileUtil {
         }
     }
 
-
-    public String getUniqueFileName(String directory, String extension) {
-        return new File(directory, new StringBuilder().append("prefix").append(UUID.randomUUID()).append(".").append(extension).toString())
-                .getAbsolutePath();
-    }
-
     public static void Unzip(String zipFile, String targetDir) {
         int BUFFER = 32 * 1024;
         String strEntry; //保存每个zip的条目名称
@@ -205,5 +199,10 @@ public class FileUtil {
         } catch (Exception cwj) {
             cwj.printStackTrace();
         }
+    }
+
+    public String getUniqueFileName(String directory, String extension) {
+        return new File(directory, new StringBuilder().append("prefix").append(UUID.randomUUID()).append(".").append(extension).toString())
+                .getAbsolutePath();
     }
 }

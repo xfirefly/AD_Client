@@ -18,6 +18,10 @@ public class IpReceiver implements Runnable {
     //private Thread commandThread;
     private CommandClient commandClient;
 
+    public static IpReceiver getInstance() {
+        return DiscoveryThreadHolder.INSTANCE;
+    }
+
     public void Close() {
         System.out.println("IpReceiver Close  ");
         if (commandClient != null) {
@@ -61,12 +65,6 @@ public class IpReceiver implements Runnable {
                     socket.disconnect();
                     socket.close();
 
-                    //					for (int i = 0; i < 100 ; i++) {
-                    //						commandClient = new CommandClient(null, ip);
-                    //						Thread commandThread = new Thread(commandClient);
-                    //						commandThread.start();
-                    //					}
-
                     commandClient = new CommandClient(null, ip);
                     Thread commandThread = new Thread(commandClient);
                     commandThread.start();
@@ -90,18 +88,14 @@ public class IpReceiver implements Runnable {
         }
     }
 
-    public static IpReceiver getInstance() {
-        return DiscoveryThreadHolder.INSTANCE;
+    public boolean isOnline(Context context) {
+        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        return netInfo != null && netInfo.isConnectedOrConnecting();
     }
 
     private static class DiscoveryThreadHolder {
 
         private static final IpReceiver INSTANCE = new IpReceiver();
-    }
-
-    public boolean isOnline(Context context) {
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo netInfo = cm.getActiveNetworkInfo();
-        return netInfo != null && netInfo.isConnectedOrConnecting();
     }
 }

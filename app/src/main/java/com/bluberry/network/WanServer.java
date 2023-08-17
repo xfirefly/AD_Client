@@ -12,8 +12,12 @@ import java.util.List;
 
 public class WanServer {
     private DatagramSocket socket;
-    //private Thread commandThread;
+
     private CommandClient commandClient;
+
+    public static WanServer getInstance() {
+        return DiscoveryThreadHolder.INSTANCE;
+    }
 
     public void Close() {
         System.out.println("WanServer Close  ");
@@ -23,6 +27,15 @@ public class WanServer {
         if (socket != null) {
             socket.close();
         }
+    }
+
+    public void connectWanServerCmd() {
+        new Thread(new WanConnectRun()).start();
+    }
+
+    private static class DiscoveryThreadHolder {
+
+        private static final WanServer INSTANCE = new WanServer();
     }
 
     public class Cust2IP {
@@ -105,19 +118,6 @@ public class WanServer {
                 return false;
             }
         }
-    }
-
-    public void connectWanServerCmd() {
-        new Thread(new WanConnectRun()).start();
-    }
-
-    public static WanServer getInstance() {
-        return DiscoveryThreadHolder.INSTANCE;
-    }
-
-    private static class DiscoveryThreadHolder {
-
-        private static final WanServer INSTANCE = new WanServer();
     }
 
 }

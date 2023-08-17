@@ -26,6 +26,9 @@ import java.util.regex.Pattern;
 
 
 public class HttpTool {
+    public final static String UA_IPAD = "Mozilla/5.0 (iPad; CPU OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3";
+    public final static String UA_CHROME = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.62 Safari/537.36";
+    public final static String REF_BAIDU = "http://www.baidu.com/";
     private static final String tag = "HttpTool";
 
     /**
@@ -64,111 +67,6 @@ public class HttpTool {
         return "N";
     }
 
-    private class LoadHelper {
-        public void get(String url) {
-            link = url;
-            done = false;
-            connOK = false;
-            new Thread(httpHelperRunnable).start();
-        }
-
-        public boolean isDone() {
-            return done;
-        }
-
-        public boolean isConnOK() {
-            return connOK;
-        }
-
-        public Map<String, String> getHttpResponseHeader(HttpURLConnection http) {
-            Map<String, String> header = new LinkedHashMap<String, String>();
-
-            for (int i = 0; ; i++) {
-                String mine = http.getHeaderField(i);
-                if (mine == null)
-                    break;
-                header.put(http.getHeaderFieldKey(i), mine);
-            }
-
-            return header;
-        }
-
-        public void printResponseHeader(HttpURLConnection http) {
-            Map<String, String> header = getHttpResponseHeader(http);
-
-            for (Map.Entry<String, String> entry : header.entrySet()) {
-                String key = entry.getKey() != null ? entry.getKey() + ":" : "";
-                Log.e("hdr ", key + entry.getValue());
-            }
-        }
-
-        private Runnable httpHelperRunnable = new Runnable() {
-            @Override
-            public void run() {
-                String useragent = "Mozilla/5.0 (iPad; CPU OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3";
-                String referer = "http://video.baidu.com/movie/?order=hot";
-
-                HttpURLConnection conn = null;
-                try {
-                    URL url = new URL(link);
-                    conn = (HttpURLConnection) url.openConnection();
-
-                    conn.setConnectTimeout(5 * 1000);
-                    conn.setRequestMethod("GET");
-                    conn.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-                    conn.setRequestProperty("Accept-Language", "en-US,en;q=0.8");
-                    conn.setRequestProperty("Referer", referer);
-                    conn.setRequestProperty("Charset", "ISO-8859-1,utf-8;q=0.7,*;q=0.3");
-                    conn.setRequestProperty("User-Agent", useragent);
-                    conn.setRequestProperty("Connection", "Keep-Alive");
-                    conn.setUseCaches(false);
-                    conn.connect();
-                    //printResponseHeader(conn);
-                    Log.e("net conn ", " code  " + conn.getResponseCode());
-                    Log.e("net conn ", " OK ");
-                    connOK = true;
-					
-					/*
-					if (conn.getResponseCode() == 200) {	不能用 == 300 的方式判断是否联通, 302 也是成功
-						Log.e("net conn ", " OK ");
-						connOK = true;
-					} else {
-						Log.e("net conn ", "server no response ");
-					}	*/
-                } catch (Exception e) {
-                    Log.e("net conn ", " ERROR ");
-                    //e.printStackTrace();
-                } finally {
-                    conn.disconnect();
-
-                }
-
-                Log.e("net conn ", "done ");
-                done = true;
-            }
-        };
-
-        private String link;
-        public boolean connOK;
-        private boolean done;
-    }
-
-
-    public boolean netConn() {
-        LoadHelper loadHelper = new LoadHelper();
-        loadHelper.get("http://www.baidu.com/");
-
-        try {
-            while (loadHelper.isDone() == false)
-                Thread.sleep(100);
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
-        return loadHelper.isConnOK();
-    }
-
     public static long getContentLength(String url) {
         try {
             HttpGet hg = new HttpGet(url);
@@ -185,12 +83,6 @@ public class HttpTool {
 
         return 0L;
     }
-
-
-    public final static String UA_IPAD = "Mozilla/5.0 (iPad; CPU OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3";
-    public final static String UA_CHROME = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.62 Safari/537.36";
-
-    public final static String REF_BAIDU = "http://www.baidu.com/";
 
     public static String doGET(String url) {
         return doGET(url, UA_CHROME, REF_BAIDU);
@@ -225,7 +117,6 @@ public class HttpTool {
 
         return null;
     }
-
 
     public static String doPost(String url, String userAgent, String refererURL, String postString) {
         try {
@@ -304,6 +195,109 @@ public class HttpTool {
         }
 
         return null;
+    }
+
+    public boolean netConn() {
+        LoadHelper loadHelper = new LoadHelper();
+        loadHelper.get("http://www.baidu.com/");
+
+        try {
+            while (loadHelper.isDone() == false)
+                Thread.sleep(100);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        return loadHelper.isConnOK();
+    }
+
+    private class LoadHelper {
+        public boolean connOK;
+        private String link;
+        private boolean done;
+        private Runnable httpHelperRunnable = new Runnable() {
+            @Override
+            public void run() {
+                String useragent = "Mozilla/5.0 (iPad; CPU OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3";
+                String referer = "http://video.baidu.com/movie/?order=hot";
+
+                HttpURLConnection conn = null;
+                try {
+                    URL url = new URL(link);
+                    conn = (HttpURLConnection) url.openConnection();
+
+                    conn.setConnectTimeout(5 * 1000);
+                    conn.setRequestMethod("GET");
+                    conn.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+                    conn.setRequestProperty("Accept-Language", "en-US,en;q=0.8");
+                    conn.setRequestProperty("Referer", referer);
+                    conn.setRequestProperty("Charset", "ISO-8859-1,utf-8;q=0.7,*;q=0.3");
+                    conn.setRequestProperty("User-Agent", useragent);
+                    conn.setRequestProperty("Connection", "Keep-Alive");
+                    conn.setUseCaches(false);
+                    conn.connect();
+                    //printResponseHeader(conn);
+                    Log.e("net conn ", " code  " + conn.getResponseCode());
+                    Log.e("net conn ", " OK ");
+                    connOK = true;
+
+					/*
+					if (conn.getResponseCode() == 200) {	不能用 == 300 的方式判断是否联通, 302 也是成功
+						Log.e("net conn ", " OK ");
+						connOK = true;
+					} else {
+						Log.e("net conn ", "server no response ");
+					}	*/
+                } catch (Exception e) {
+                    Log.e("net conn ", " ERROR ");
+                    //e.printStackTrace();
+                } finally {
+                    conn.disconnect();
+
+                }
+
+                Log.e("net conn ", "done ");
+                done = true;
+            }
+        };
+
+        public void get(String url) {
+            link = url;
+            done = false;
+            connOK = false;
+            new Thread(httpHelperRunnable).start();
+        }
+
+        public boolean isDone() {
+            return done;
+        }
+
+        public boolean isConnOK() {
+            return connOK;
+        }
+
+        public Map<String, String> getHttpResponseHeader(HttpURLConnection http) {
+            Map<String, String> header = new LinkedHashMap<String, String>();
+
+            for (int i = 0; ; i++) {
+                String mine = http.getHeaderField(i);
+                if (mine == null)
+                    break;
+                header.put(http.getHeaderFieldKey(i), mine);
+            }
+
+            return header;
+        }
+
+        public void printResponseHeader(HttpURLConnection http) {
+            Map<String, String> header = getHttpResponseHeader(http);
+
+            for (Map.Entry<String, String> entry : header.entrySet()) {
+                String key = entry.getKey() != null ? entry.getKey() + ":" : "";
+                Log.e("hdr ", key + entry.getValue());
+            }
+        }
     }
 
 }

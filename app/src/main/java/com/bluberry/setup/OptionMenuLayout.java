@@ -19,7 +19,7 @@ import android.widget.TextView;
 import com.bluberry.adclient.App;
 import com.bluberry.adclient.Msg;
 import com.bluberry.adclient.R;
-import com.bluberry.adclient.RTKSourceInActivity;
+import com.bluberry.adclient.MainActivity;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -32,8 +32,10 @@ import java.util.List;
 //import com.realtek.hardware.RtkHDMIManager;
 
 public class OptionMenuLayout extends LinearLayout {
+    TextView txt_curr_ip;
+    TextView txt_curr_id;
+    TextView txt_curr_time;
     private String TAG = "OptionMenuLayout";
-
     private ArrowView mSubOnoffView;
     private Context mContext;
     private String[] mCurrentChannel;
@@ -41,22 +43,30 @@ public class OptionMenuLayout extends LinearLayout {
     //private ArrowView mLangView;
     private ArrowView mResView;
     //private ArrowView mVideoSourceView;
-    private RTKSourceInActivity mMainActivity;
+    private MainActivity mMainActivity;
     //private ImageView mFavView;
     private Button mPrevButton;
     private Button mNextButton;
     private Button mIpSetButton;
-    private Button mIdSetButton;
-
-    private Button mLangButton;
-    private Button mDateButton;
 
     //private RtkHDMIManager mRtkHDMIManager;
+    private Button mIdSetButton;
+    private Button mLangButton;
+    private Button mDateButton;
+    private int tvSys = 0;
+    private Runnable switchTvSystem = new Runnable() {
+        @Override
+        public void run() {
+            //mRtkHDMIManager.setTVSystem(tvSys);
+            App.saveInt("tvsys", tvSys);
+        }
+    };
+
 
     public OptionMenuLayout(Context paramContext) {
         super(paramContext);
         mContext = paramContext;
-        mMainActivity = (RTKSourceInActivity) mContext;
+        mMainActivity = (MainActivity) mContext;
     }
 
     public OptionMenuLayout(Context paramContext, AttributeSet paramAttributeSet) {
@@ -66,13 +76,47 @@ public class OptionMenuLayout extends LinearLayout {
         if (isInEditMode()) {
             return;
         }
-        mMainActivity = (RTKSourceInActivity) mContext;
+        mMainActivity = (MainActivity) mContext;
     }
 
     public OptionMenuLayout(Context paramContext, AttributeSet paramAttributeSet, int paramInt) {
         super(paramContext, paramAttributeSet);
         mContext = paramContext;
-        mMainActivity = (RTKSourceInActivity) mContext;
+        mMainActivity = (MainActivity) mContext;
+    }
+
+    /**
+     * Get IP address from first non-localhost interface
+     *
+     * @param ipv4 true=return ipv4, false=return ipv6
+     * @return address or empty string
+     */
+    public static String getIPAddress(boolean useIPv4) {
+        try {
+            List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
+            for (NetworkInterface intf : interfaces) {
+                List<InetAddress> addrs = Collections.list(intf.getInetAddresses());
+                for (InetAddress addr : addrs) {
+                    if (!addr.isLoopbackAddress()) {
+                        String sAddr = addr.getHostAddress();
+                        //boolean isIPv4 = InetAddressUtils.isIPv4Address(sAddr);
+                        boolean isIPv4 = sAddr.indexOf(':') < 0;
+
+                        if (useIPv4) {
+                            if (isIPv4)
+                                return sAddr;
+                        } else {
+                            if (!isIPv4) {
+                                int delim = sAddr.indexOf('%'); // drop ip6 zone suffix
+                                return delim < 0 ? sAddr.toUpperCase() : sAddr.substring(0, delim).toUpperCase();
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ex) {
+        } // for now eat exceptions
+        return "";
     }
 
     private void initSubOnOffView() {
@@ -86,7 +130,6 @@ public class OptionMenuLayout extends LinearLayout {
         //mLangView.setData(Arrays.asList(mContext.getResources().getStringArray(R.array.lang)), App.getInt("lang"));
         //mLangView.setOnItemSelectedLinstener(new onLangChgView());
     }
-
 
     private void initResView() {
         //mResView.setData(Arrays.asList(mContext.getResources().getStringArray(R.array.screen_proportion)), 1);
@@ -111,11 +154,6 @@ public class OptionMenuLayout extends LinearLayout {
         initSubOnOffView();
         initLangView();
     }
-
-    TextView txt_curr_ip;
-    TextView txt_curr_id;
-
-    TextView txt_curr_time;
 
     protected void onFinishInflate() {
         super.onFinishInflate();
@@ -175,7 +213,7 @@ public class OptionMenuLayout extends LinearLayout {
                 // TODO Auto-generated method stub
                 //mMainActivity.closeOptionDialog();
 
-                RTKSourceInActivity.thiz.sendMessage(Msg.MESSAGE_PREV_SCENE, this);
+                MainActivity.thiz.sendMessage(Msg.MESSAGE_PREV_SCENE, this);
             }
         });
         mNextButton.setOnClickListener(new View.OnClickListener() {
@@ -185,7 +223,7 @@ public class OptionMenuLayout extends LinearLayout {
                 // TODO Auto-generated method stub
                 //mMainActivity.closeOptionDialog();
 
-                RTKSourceInActivity.thiz.sendMessage(Msg.MESSAGE_NEXT_SCENE, this);
+                MainActivity.thiz.sendMessage(Msg.MESSAGE_NEXT_SCENE, this);
             }
         });
 
@@ -339,40 +377,6 @@ public class OptionMenuLayout extends LinearLayout {
         return true;
     }
 
-    /**
-     * Get IP address from first non-localhost interface
-     *
-     * @param ipv4 true=return ipv4, false=return ipv6
-     * @return address or empty string
-     */
-    public static String getIPAddress(boolean useIPv4) {
-        try {
-            List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
-            for (NetworkInterface intf : interfaces) {
-                List<InetAddress> addrs = Collections.list(intf.getInetAddresses());
-                for (InetAddress addr : addrs) {
-                    if (!addr.isLoopbackAddress()) {
-                        String sAddr = addr.getHostAddress();
-                        //boolean isIPv4 = InetAddressUtils.isIPv4Address(sAddr);
-                        boolean isIPv4 = sAddr.indexOf(':') < 0;
-
-                        if (useIPv4) {
-                            if (isIPv4)
-                                return sAddr;
-                        } else {
-                            if (!isIPv4) {
-                                int delim = sAddr.indexOf('%'); // drop ip6 zone suffix
-                                return delim < 0 ? sAddr.toUpperCase() : sAddr.substring(0, delim).toUpperCase();
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (Exception ex) {
-        } // for now eat exceptions
-        return "";
-    }
-
     public void setOnKeyListener(View.OnKeyListener paramOnKeyListener) {
         mOnKeyListener = paramOnKeyListener;
     }
@@ -395,15 +399,6 @@ public class OptionMenuLayout extends LinearLayout {
 			}*/
         }
     }
-
-    private int tvSys = 0;
-    private Runnable switchTvSystem = new Runnable() {
-        @Override
-        public void run() {
-            //mRtkHDMIManager.setTVSystem(tvSys);
-            App.saveInt("tvsys", tvSys);
-        }
-    };
 
     class onAutoBootView implements ArrowView.OnItemSelectedLinstener {
 

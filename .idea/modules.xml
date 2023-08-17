@@ -2,6 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/AD_Client.iml" filepath="$PROJECT_DIR$/AD_Client.iml" group="AD_Client" />
+      <module fileurl="file://$PROJECT_DIR$/app/AD_Client-app.iml" filepath="$PROJECT_DIR$/app/AD_Client-app.iml" group="AD_Client/app" />
       <module fileurl="file://$PROJECT_DIR$/AdClient.iml" filepath="$PROJECT_DIR$/AdClient.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>

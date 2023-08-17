@@ -16,6 +16,9 @@ import javax.crypto.spec.SecretKeySpec;
 
 public class CryptLib {
 
+    //a random Init. Vector. just for testing
+    static String ivs = "e675f725e675f725";
+
     private static String Encrypt(String raw) throws Exception {
         Cipher c = getCipher(Cipher.ENCRYPT_MODE);
 
@@ -44,9 +47,6 @@ public class CryptLib {
 
         return new String(decValue);
     }
-
-    //a random Init. Vector. just for testing
-    static String ivs = "e675f725e675f725";
 
     private static Key generateKey() throws Exception {
 

@@ -7,7 +7,7 @@ import android.view.View;
 import android.widget.PopupWindow;
 
 import com.bluberry.adclient.R;
-import com.bluberry.adclient.RTKSourceInActivity;
+import com.bluberry.adclient.MainActivity;
 
 /**
  * ��ʾ ѡԴ�� UI
@@ -17,12 +17,12 @@ import com.bluberry.adclient.RTKSourceInActivity;
 public class ShowOptionMenu {
 
     private PopupWindow popupWindow = null;
-    private RTKSourceInActivity myMainActivity;
+    private MainActivity myMainActivity;
 
     private int screenWidth = 0, screenHeight = 0;
     private OptionMenuLayout view;
 
-    public ShowOptionMenu(RTKSourceInActivity myMainActivity, int w, int h) {
+    public ShowOptionMenu(MainActivity myMainActivity, int w, int h) {
         this.myMainActivity = myMainActivity;
         this.screenWidth = w;
         this.screenHeight = h;
