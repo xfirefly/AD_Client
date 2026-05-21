@@ -48,6 +48,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import cs.comm.AdProgram;
 import cs.comm.Cmd;
@@ -75,15 +77,13 @@ public class ADRender {
 
     private MyBroadcastReceiver usbReceiver;
 
-    private GpioReadThread gpioThread;
 
     private List<ScrollTextView> subtitleList = new ArrayList<>();
     private List<View> picList = new ArrayList<>();
-    private Thread threadSceneUpdater;
-
-    private List<Thread> appThreads = new ArrayList<>();
-    private List<Thread> adThreads = new ArrayList<>();
-    private List<Thread> sceneThreads = new ArrayList<>();
+    // Thread pools replacing the old List<Thread> + join() pattern
+    private ExecutorService appExecutor = Executors.newCachedThreadPool();   // long-lived: IpReceiver, TimingAdChecker, TakeScreenshot
+    private ExecutorService adExecutor = Executors.newSingleThreadExecutor(); // per-program: SceneUpdater
+    private ExecutorService sceneExecutor = Executors.newCachedThreadPool();  // per-scene: VideoUpdater, PictureUpdater, BackImageUpdater
 
     private HashMap<String, Drawable> drawableMap = new HashMap<>();
     private TextView tvTips = null;
@@ -102,6 +102,7 @@ public class ADRender {
                     break;
 
                 case MESSAGE_DRAW_AD:
+                    Log.w("ADR_TIMING", "[Handler] MESSAGE_DRAW_AD received at " + System.currentTimeMillis() + " ms");
                     tvTips = null;
                     endDrawAd();
                     drawAdProgram((AdProgram) msg.obj);
@@ -120,6 +121,7 @@ public class ADRender {
                     break;
 
                 case MESSAGE_DRAW_SCENE:
+                    Log.w("ADR_TIMING", "[Handler] MESSAGE_DRAW_SCENE received at " + System.currentTimeMillis() + " ms");
                     drawScene((Scene) msg.obj);
                     break;
 
@@ -138,8 +140,7 @@ public class ADRender {
                     break;
 
                 case MESSAGE_TakeScreenshot:
-                    Thread ipReceiverThread = new Thread(new TakeScreenshot((CommandClient) msg.obj));
-                    ipReceiverThread.start();
+                    appExecutor.submit(new TakeScreenshot((CommandClient) msg.obj));
                     break;
 
                 case MESSAGE_STOP_AND_RENAME:
@@ -239,12 +240,8 @@ public class ADRender {
         App.setMessageHandler(adHandler);
         App.setAdRender(this);
 
-        Thread ipReceiverThread = new Thread(IpReceiver.getInstance());
-        ipReceiverThread.start();
-        appThreads.add(ipReceiverThread);
-
-        Thread jsonParserThread = new Thread(new AdJsonParser());
-        jsonParserThread.start();
+        appExecutor.submit(IpReceiver.getInstance());
+        appExecutor.submit(new AdJsonParser());
 
         usbReceiver = new MyBroadcastReceiver();
         usbReceiver.registe();
@@ -258,8 +255,7 @@ public class ADRender {
             App.saveInt("sub_onoff", 1);
         }
 
-        Thread timingAdChecker = new Thread(new TimingAdChecker());
-        timingAdChecker.start();
+        appExecutor.submit(new TimingAdChecker());
     }
 
     public void unInit() {
@@ -270,43 +266,59 @@ public class ADRender {
 
         endDrawAd();
 
-        print.w(TAG, "appThreads join begin " + nowTime());
-        joinThreads(appThreads);
+        // shutdownNow() sends interrupt to all running tasks;
+        // the interrupt will propagate through the existing InterruptedException
+        // exit paths in each Runnable. killProcess() below guarantees cleanup.
+        print.w(TAG, "appExecutor shutdownNow " + nowTime());
+        appExecutor.shutdownNow();
 
         android.os.Process.killProcess(android.os.Process.myPid());
     }
 
     public synchronized AdProgram parseJson(String dir, boolean add) {
+        long _t0 = System.currentTimeMillis();
         print.w(TAG, "parseJson: " + dir);
         AdProgram ad = null;
+
+        long _tFile = System.currentTimeMillis();
         String json = IOUtil.loadFileAsString(dir + "config.json");
+        Log.d("ADR_TIMING", "[parseJson] file read: " + (System.currentTimeMillis() - _tFile) + " ms  dir=" + dir);
+
         if (json == null) {
             sendMessage(Msg.MESSAGE_NO_DATA, "");
             return ad;
         }
 
         try {
+            long _tDecrypt = System.currentTimeMillis();
             json = CryptLib.decode(json);
+            Log.d("ADR_TIMING", "[parseJson] decrypt: " + (System.currentTimeMillis() - _tDecrypt) + " ms");
+
             if (json == null) {
                 print.w(TAG, "decode ret null ");
                 return ad;
             }
+
+            long _tWrite = System.currentTimeMillis();
             File tempConfg = new File(dir + "temp.json");
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 Files.write(
-                        tempConfg.toPath(),        // File 转 Path
-                        json.getBytes(StandardCharsets.UTF_8),  // 字符串转字节
-                        StandardOpenOption.CREATE,  // 文件不存在则创建
-                        StandardOpenOption.TRUNCATE_EXISTING  // 覆盖原有内容
+                        tempConfg.toPath(),
+                        json.getBytes(StandardCharsets.UTF_8),
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.TRUNCATE_EXISTING
                 );
             }
+            Log.d("ADR_TIMING", "[parseJson] write temp.json: " + (System.currentTimeMillis() - _tWrite) + " ms");
 
+            long _tGson = System.currentTimeMillis();
             GsonBuilder gsonBuilder = new GsonBuilder();
             gsonBuilder.registerTypeAdapter(AdItemType.class, new AdItemTypeSerializer());
             gsonBuilder.registerTypeAdapter(Direction.class, new DirectionSerializer());
             Gson gson = gsonBuilder.create();
-
             ad = gson.fromJson(json, AdProgram.class);
+            Log.d("ADR_TIMING", "[parseJson] Gson deserialize: " + (System.currentTimeMillis() - _tGson) + " ms");
+
             for (Scene sne : ad.scene) {
                 sne.dir = dir;
             }
@@ -322,6 +334,8 @@ public class ADRender {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        Log.w("ADR_TIMING", "[parseJson] TOTAL: " + (System.currentTimeMillis() - _t0) + " ms  dir=" + dir);
         return ad;
     }
 
@@ -335,18 +349,14 @@ public class ADRender {
         }
     }
 
-    private void joinThreads(List<Thread> threads) {
-        for (Thread thread : threads) {
-            thread.interrupt();
-        }
-        for (Thread thread : threads) {
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        threads.clear();
+    /**
+     * Shuts down an executor immediately and returns a fresh replacement.
+     * shutdownNow() sends interrupt signals that trigger the existing
+     * InterruptedException exit logic inside each Runnable.
+     */
+    private ExecutorService shutdownExecutor(ExecutorService executor) {
+        executor.shutdownNow();
+        return Executors.newCachedThreadPool();
     }
 
     private Drawable getDrawable(String path) {
@@ -485,7 +495,8 @@ public class ADRender {
     }
 
     private void drawScene(Scene scene) {
-        Log.d(TAG, "drawScene() called with: scene = [" + scene + "]");
+        long _t0 = System.currentTimeMillis();
+        Log.w("ADR_TIMING", "[drawScene] START at " + _t0 + " ms, scene=" + scene);
         destroySubtitle();
 
         for (Scene _s : currentAd.scene) {
@@ -493,9 +504,9 @@ public class ADRender {
         }
         scene.drawing = true;
 
-        print.w(TAG, "scene thread join begin  " + nowTime());
-        joinThreads(sceneThreads);
-        print.w(TAG, "scene thread join end  " + nowTime());
+        print.w(TAG, "sceneExecutor shutdownNow (drawScene)  " + nowTime());
+        sceneExecutor = shutdownExecutor(sceneExecutor);
+        print.w(TAG, "sceneExecutor ready  " + nowTime());
 
         drawableMap.clear();
 
@@ -510,9 +521,7 @@ public class ADRender {
                     {
                         Video v = scene.video.get(i_vid);
                         if (v.filelist.size() > 0) {
-                            Thread thread = new Thread(new VideoUpdater(scene.dir, addVideo(v), v, i_vid));
-                            thread.start();
-                            sceneThreads.add(thread);
+                            sceneExecutor.submit(new VideoUpdater(scene.dir, addVideo(v), v, i_vid));
                         } else {
                             rtk.addHDMI(scene.video.get(i_vid));
                         }
@@ -521,9 +530,7 @@ public class ADRender {
                     break;
                 case Picture:
                     Picture p = scene.picture.get(i_pic);
-                    Thread thread = new Thread(new PictureUpdater(scene.dir, addPicture(p), p));
-                    thread.start();
-                    sceneThreads.add(thread);
+                    sceneExecutor.submit(new PictureUpdater(scene.dir, addPicture(p), p));
                     i_pic++;
                     break;
                 case Subtitle:
@@ -535,22 +542,21 @@ public class ADRender {
                     break;
             }
         }
+        Log.w("ADR_TIMING", "[drawScene] DONE in " + (System.currentTimeMillis() - _t0) + " ms");
     }
 
     private void drawAdProgram(AdProgram ad) {
         currentAd = ad;
 
-        print.w(TAG, "ad thread join begin  " + nowTime());
-        joinThreads(adThreads);
-        print.w(TAG, "ad thread join end  " + nowTime());
+        print.w(TAG, "adExecutor shutdown begin  " + nowTime());
+        adExecutor = shutdownExecutor(adExecutor);
+        print.w(TAG, "adExecutor shutdown end  " + nowTime());
 
         App.saveString("last_scene", currentAd.scene.get(0).dir);
     }
 
     private void startSceneUpdater() {
-        threadSceneUpdater = new Thread(new SceneUpdater(currentAd));
-        threadSceneUpdater.start();
-        adThreads.add(threadSceneUpdater);
+        adExecutor.submit(new SceneUpdater(currentAd));
     }
 
     private void endDrawAd() {
@@ -568,11 +574,11 @@ public class ADRender {
 
         drawableMap.clear();
 
-        print.w(TAG, "sceneThreads join begin " + nowTime());
-        joinThreads(sceneThreads);
+        print.w(TAG, "sceneExecutor shutdownNow " + nowTime());
+        sceneExecutor = shutdownExecutor(sceneExecutor);
 
-        print.w(TAG, "adThreads join begin " + nowTime());
-        joinThreads(adThreads);
+        print.w(TAG, "adExecutor shutdownNow " + nowTime());
+        adExecutor = shutdownExecutor(adExecutor);
 
         currentAd = null;
         currentScene = null;
@@ -624,13 +630,20 @@ public class ADRender {
 
     public class AdJsonParser implements Runnable {
         public void run() {
+            long _tScan0 = System.currentTimeMillis();
+            Log.w("ADR_TIMING", "[AdJsonParser] started at " + _tScan0 + " ms");
+
             print.i(TAG, "init parse: " + App.getAdDir());
             String[] dirs = App.getDirs(App.getAdDir());
 
             for (String str : dirs) {
                 print.i(TAG, "init parse: " + App.getAdDir() + str);
+                long _t = System.currentTimeMillis();
                 parseJson(App.getAdDir() + str + "/", false);
+                Log.w("ADR_TIMING", "[AdJsonParser] dir '" + str + "' parsed in " + (System.currentTimeMillis() - _t) + " ms");
             }
+
+            Log.w("ADR_TIMING", "[AdJsonParser] all dirs parsed in " + (System.currentTimeMillis() - _tScan0) + " ms, sending MESSAGE_DRAW_AD at " + System.currentTimeMillis() + " ms");
 
             if (dirs.length == 0) {
                 sendMessage(Msg.MESSAGE_NO_DATA, "");
@@ -796,6 +809,7 @@ public class ADRender {
         public void run() {
             if (ad.scene.size() == 1) {
                 print.v(TAG, "Single scene");
+                Log.w("ADR_TIMING", "[SceneUpdater] sending MESSAGE_DRAW_SCENE (single scene) at " + System.currentTimeMillis() + " ms");
                 sendMessage(Msg.MESSAGE_DRAW_SCENE, ad.scene.get(0));
             }
 
@@ -874,47 +888,7 @@ public class ADRender {
         }
     }
 
-    private class GpioReadThread extends Thread {
-        boolean subEnable = true;
 
-        @Override
-        public void run() {
-            int i = 0;
-
-            while (App.Alive) {
-                try {
-                    BufferedReader br = new BufferedReader(new FileReader("/sys/kernel/debug/gpio"), 512);
-                    String line;
-                    i = 0;
-
-                    while ((line = br.readLine()) != null) {
-                        i++;
-                        if (i == 5 && line.contains("32") && line.contains("lo")) {
-                            subEnable = !subEnable;
-                            sendMessage(Msg.MESSAGE_CHANGE_SUBTITLE_VISABLE, subEnable);
-                            break;
-                        } else if (i == 6 && line.contains("33") && line.contains("lo")) {
-                            sendMessage(Msg.MESSAGE_PREV_SCENE, this);
-                            break;
-                        } else if (i == 7 && line.contains("34")) {
-                            if (line.contains("lo")) {
-                                sendMessage(Msg.MESSAGE_NEXT_SCENE, this);
-                            }
-                            break;
-                        }
-                    }
-                    br.close();
-                    Thread.sleep(80);
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
 
     public class TakeScreenshot implements Runnable {
         CommandClient cc;
