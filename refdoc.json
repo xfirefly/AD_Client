@@ -1,0 +1,103 @@
+{
+  "ver": 1,
+  "sceneIntval": 0,
+  "backImageIntval": -1,
+  "backImage": [],
+  "scene": [
+    {
+      "timing": "00:00",
+      "name": "_temp",
+      "layers": [
+        1,
+        0,
+        2,
+        2
+      ],
+      "video": [
+        {
+          "intval": 0,
+          "filelist": [
+            "advid_348bd0525390bae544b6acc9f96030c7.mp4",
+            "advid_446de50bda9e839754894318eeeff1ba.mp4",
+            "advid_26f4e04c4372c8383f6bd72f44748154.mp4",
+            "advid_8d7b384be08fd4bdc711254f8838a633.mp4"
+          ],
+          "x": 59,
+          "y": 122,
+          "w": 909,
+          "h": 704,
+          "fx": 29.0,
+          "fy": 56.0,
+          "fx1": 470.0,
+          "fy1": 379.0,
+          "type": "video"
+        }
+      ],
+      "subtitle": [
+        {
+          "fontname": "simsun.ttf",
+          "fontsize": 30,
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "transparent": false,
+          "opacity": 100,
+          "direction": 0,
+          "speed": 7,
+          "text": "请在 字幕内容 区输入字幕( 双击放大)",
+          "fontcolor": "#FFFFFFFF",
+          "backcolor": "#FF3CA7C7",
+          "x": 0,
+          "y": 0,
+          "w": 1920,
+          "h": 72,
+          "fx": 0.0,
+          "fy": 0.0,
+          "fx1": 931.0,
+          "fy1": 33.0,
+          "type": "subtitle"
+        },
+        {
+          "fontname": "simsun.ttf",
+          "fontsize": 30,
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "transparent": false,
+          "opacity": 100,
+          "direction": 0,
+          "speed": 7,
+          "text": "请在 字幕内容 区输入字幕( 双击放大)",
+          "fontcolor": "#FFFFFFFF",
+          "backcolor": "#FF3CA7C7",
+          "x": 0,
+          "y": 1008,
+          "w": 1920,
+          "h": 72,
+          "fx": 0.0,
+          "fy": 462.0,
+          "fx1": 931.0,
+          "fy1": 495.0,
+          "type": "subtitle"
+        }
+      ],
+      "picture": [
+        {
+          "intval": 0,
+          "filelist": [
+            "pic_5ab4428cc792ad5ee7d7a861bdfd045e.png"
+          ],
+          "x": 0,
+          "y": 0,
+          "w": 1920,
+          "h": 1080,
+          "fx": 0.0,
+          "fy": 0.0,
+          "fx1": 931.0,
+          "fy1": 495.0,
+          "type": "picture"
+        }
+      ]
+    }
+  ]
+}

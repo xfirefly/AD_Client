@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -39,6 +40,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -63,6 +67,8 @@ public class ADRender {
     private MainActivity rtk;
     private ViewGroup m_Root;
     private String TAG = "ADR";
+    private int screenWidth = 1920;
+    private int screenHeight = 1080;
     private List<AdProgram> adList = new ArrayList<>();
     private AdProgram currentAd = null;
     private Scene currentScene = null;
@@ -221,6 +227,12 @@ public class ADRender {
     public ADRender(MainActivity mainActivity) {
         rtk = mainActivity;
         m_Root = rtk.m_Root;
+
+        android.util.DisplayMetrics dm = new android.util.DisplayMetrics();
+        rtk.getWindowManager().getDefaultDisplay().getMetrics(dm);
+        screenWidth = dm.widthPixels;
+        screenHeight = dm.heightPixels;
+        print.i(TAG, "Screen: " + screenWidth + "x" + screenHeight);
     }
 
     public void init() {
@@ -278,6 +290,15 @@ public class ADRender {
             if (json == null) {
                 print.w(TAG, "decode ret null ");
                 return ad;
+            }
+            File tempConfg = new File(dir + "temp.json");
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Files.write(
+                        tempConfg.toPath(),        // File 转 Path
+                        json.getBytes(StandardCharsets.UTF_8),  // 字符串转字节
+                        StandardOpenOption.CREATE,  // 文件不存在则创建
+                        StandardOpenOption.TRUNCATE_EXISTING  // 覆盖原有内容
+                );
             }
 
             GsonBuilder gsonBuilder = new GsonBuilder();
@@ -337,8 +358,12 @@ public class ADRender {
     }
 
     private VideoPlayer addVideo(Video s) {
-        VideoPlayer vplayer = new VideoPlayer(rtk, m_Root, s.x, s.y, s.w, s.h);
-        print.i(TAG, "add vid " + s.x + " " + s.y + " " + s.w + " " + s.h);
+        int x = cs.ipc.LocationCalc.ToFormX(s.x, screenWidth);
+        int y = cs.ipc.LocationCalc.ToFormY(s.y, screenHeight);
+        int w = cs.ipc.LocationCalc.ToFormX(s.w, screenWidth);
+        int h = cs.ipc.LocationCalc.ToFormY(s.h, screenHeight);
+        VideoPlayer vplayer = new VideoPlayer(rtk, m_Root, x, y, w, h);
+        print.i(TAG, "add vid " + s.x + "," + s.y + " " + s.w + "x" + s.h + " -> " + x + "," + y + " " + w + "x" + h);
         return vplayer;
     }
 
@@ -348,14 +373,19 @@ public class ADRender {
     }
 
     private ImageView addPicture(Picture s) {
+        int x = cs.ipc.LocationCalc.ToFormX(s.x, screenWidth);
+        int y = cs.ipc.LocationCalc.ToFormY(s.y, screenHeight);
+        int w = cs.ipc.LocationCalc.ToFormX(s.w, screenWidth);
+        int h = cs.ipc.LocationCalc.ToFormY(s.h, screenHeight);
+
         ImageView iv = new ImageView(rtk);
         iv.setScaleType(ScaleType.FIT_XY);
 
-        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(s.w, s.h);
-        params.leftMargin = s.x;
-        params.topMargin = s.y;
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(w, h);
+        params.leftMargin = x;
+        params.topMargin = y;
         m_Root.addView(iv, params);
-        print.i(TAG, "add pic " + s.x + " " + s.y + " " + s.w + " " + s.h);
+        print.i(TAG, "add pic " + s.x + "," + s.y + " " + s.w + "x" + s.h + " -> " + x + "," + y + " " + w + "x" + h);
 
         picList.add(iv);
         return iv;
@@ -366,6 +396,11 @@ public class ADRender {
     }
 
     private void addSubtitle(Subtitle s) {
+        int x = cs.ipc.LocationCalc.ToFormX(s.x, screenWidth);
+        int y = cs.ipc.LocationCalc.ToFormY(s.y, screenHeight);
+        int w = cs.ipc.LocationCalc.ToFormX(s.w, screenWidth);
+        int h = cs.ipc.LocationCalc.ToFormY(s.h, screenHeight);
+
         ScrollTextView view = new ScrollTextView(rtk);
 
         view.setDirection(s.direction);
@@ -409,11 +444,11 @@ public class ADRender {
             view.setPaintFlags(view.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
         }
 
-        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(s.w, s.h);
-        params.leftMargin = s.x;
-        params.topMargin = s.y;
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(w, h);
+        params.leftMargin = x;
+        params.topMargin = y;
         m_Root.addView(view, params);
-        print.i(TAG, "add sub " + s.x + " " + s.y + " " + s.w + " " + s.h);
+        print.i(TAG, "add sub " + s.x + "," + s.y + " " + s.w + "x" + s.h + " -> " + x + "," + y + " " + w + "x" + h);
         view.startScroll();
 
         view.setVisibility(App.getInt("sub_onoff") != 0 ? View.VISIBLE : View.INVISIBLE);
