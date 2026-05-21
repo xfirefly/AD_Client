@@ -23,7 +23,6 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.bluberry.adclient.sp.SerialPortBiz;
 import com.bluberry.common.IOUtil;
 import com.bluberry.common.print;
 import com.bluberry.network.CommandClient;
@@ -71,7 +70,6 @@ public class ADRender {
     private MyBroadcastReceiver usbReceiver;
 
     private GpioReadThread gpioThread;
-    private SerialPortBiz spb;
 
     private List<ScrollTextView> subtitleList = new ArrayList<ScrollTextView>();
     private List<View> picList = new ArrayList<>();
@@ -177,24 +175,18 @@ public class ADRender {
 
                     break;
                 case MESSAGE_RECV_JSON_BEGIN:
-                    if (App.SERIAL_PORT)
-                        break;
 
                     //endDrawAd();
                     //showTips(App.getInstance().getResources().getText(R.string.wait));
                     Toast.makeText(rtk, R.string.wait, Toast.LENGTH_LONG).show();
                     break;
                 case MESSAGE_RECV_JSON_PROGRESS:
-                    if (App.SERIAL_PORT)
-                        break;
 
                     if (tvTips != null) {
                         tvTips.setText("接收文件, 请稍候...(" + msg.obj + "%)");
                     }
                     break;
                 case MESSAGE_RECV_JSON_END:
-                    if (App.SERIAL_PORT)
-                        break;
 
                     if (tvTips != null) {
                         tvTips.setText("解析文件, 请稍候...");
@@ -332,17 +324,6 @@ public class ADRender {
             App.saveInt("sub_onoff", 1);
         }
 
-        if (App.SERIAL_PORT) {
-            spb = new SerialPortBiz();
-            spb.init();
-
-            gpioThread = new GpioReadThread();
-            gpioThread.start();
-
-/*			IntentFilter hdmiRxFilter = new IntentFilter(HDMIRxStatus.ACTION_HDMIRX_PLUGGED);
-			rtk.registerReceiver(hdmiRxHotPlugReceiver, hdmiRxFilter);*/
-        }
-
 
         Thread timingAdChecker = new Thread(new TimingAdChecker());
         timingAdChecker.start();
@@ -358,9 +339,7 @@ public class ADRender {
 		}
 */
 
-        if (spb != null) {
-            spb.uninit();
-        }
+
 
         usbReceiver.unRegiste();
         IpReceiver.getInstance().Close();
@@ -675,7 +654,7 @@ public class ADRender {
         for (AdItemType itemType : scene.layers) {
             switch (itemType) {
                 case Video:
-                    if (!App.SERIAL_PORT) {
+                    {
                         Video v = scene.video.get(i_vid);
                         if (v.filelist.size() > 0) {
                             Thread thread = new Thread(new VideoUpdater(scene.dir, addVideo(v), v, i_vid));
@@ -684,9 +663,6 @@ public class ADRender {
                         } else {
                             rtk.addHDMI(scene.video.get(i_vid));
                         }
-                        i_vid++;
-                    } else {
-                        rtk.addHDMI(scene.video.get(i_vid));
                         i_vid++;
                     }
                     break;

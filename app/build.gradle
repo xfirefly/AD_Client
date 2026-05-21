@@ -1,55 +1,75 @@
 apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
 
-//apply plugin: 'AndResGuard'
 
 android {
-    compileSdkVersion 28
-
-    flavorDimensions "default"
+    namespace 'com.bluberry.adclient'
+    compileSdk rootProject.ext.compileSdkVersion
+    resourcePrefix = "tvc_"
 
     defaultConfig {
-        applicationId "com.bluberry.adclient"
-        minSdkVersion 19
-        targetSdkVersion 25
-        versionCode 1
-        versionName "1.0"
+        applicationId = "com.bluberry.adclient"
+
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode version_code
+        versionName version_name
 
     }
- 
 
-    lintOptions {
-        checkReleaseBuilds false
-        // Or, if you prefer, you can continue to check for errors in release builds,
-        // but continue the build even when errors are found:
-        abortOnError false
+    signingConfigs {
+        debug {
+            keyAlias 'huiqiu'
+            keyPassword '080710318'
+            storeFile file('rk.keystore')
+            storePassword '080710318'
+        }
+        release {
+            keyAlias 'huiqiu'
+            keyPassword '080710318'
+            storeFile file('rk.keystore')
+            storePassword '080710318'
+        }
+
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+
+        debug {
+            debuggable true
+            minifyEnabled false
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     useLibrary  'org.apache.http.legacy'
-
-
-
 }
 
-repositories {
-    flatDir {
-        dirs 'libs'
-    }
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
 }
-
-
 
 dependencies {
-    implementation 'com.android.support:appcompat-v7:28.0.0'
 
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
-        exclude group: 'com.android.support', module: 'support-annotations'
-    })
+    implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
+    implementation "androidx.appcompat:appcompat:$rootProject.ext.supportLibraryVersion"
+    implementation "androidx.constraintlayout:constraintlayout:$constraintlayout_version"
+    implementation 'com.squareup.okhttp3:okhttp:' + okhttpVersion
+    implementation 'io.github.azhon:appupdate:4.3.6'
 
-    //provided files('W:/rtk/1195/160315_tuke/160315/android/out/target/common/obj/JAVA_LIBRARIES/realtek_intermediates/classes.jar')
-
-    //compile files('W:/kylin_dd/build_scripts/android/out/target/common/obj/JAVA_LIBRARIES/realtek_intermediates/classes.jar')
-
-
-    testCompile 'junit:junit:4.12'
 }

@@ -26,7 +26,7 @@ public class App extends Application {
     //============== config ==============
     //public final static boolean WAN = true;
     public final static boolean HDMI = false;
-    public final static boolean SERIAL_PORT = false;
+
     //所有ad zip 解压到本目录下, 按数字递增取文件夹名
     public static final String AdDir = Environment.getExternalStorageDirectory().getAbsolutePath() + "/ad_bluberry/";
     //////////////////////////////////////////////////
