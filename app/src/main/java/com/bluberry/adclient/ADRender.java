@@ -80,6 +80,7 @@ public class ADRender {
 
     private List<ScrollTextView> subtitleList = new ArrayList<>();
     private List<View> picList = new ArrayList<>();
+    private List<VideoPlayer> videoList = new ArrayList<>();  // tracks all active VideoPlayers for cleanup
     // Thread pools replacing the old List<Thread> + join() pattern
     private ExecutorService appExecutor = Executors.newCachedThreadPool();   // long-lived: IpReceiver, TimingAdChecker, TakeScreenshot
     private ExecutorService adExecutor = Executors.newSingleThreadExecutor(); // per-program: SceneUpdater
@@ -480,6 +481,18 @@ public class ADRender {
     }
 
     public void destroySubtitle() {
+        // 1. Stop and release all active VideoPlayers, remove their SurfaceViews
+        for (VideoPlayer vp : videoList) {
+            vp.destroy();  // sets released=true, stops + releases MediaPlayer
+            android.view.View sv = vp.getSurfaceView();
+            if (sv != null) {
+                sv.setVisibility(View.GONE);
+                m_Root.removeView(sv);
+            }
+        }
+        videoList.clear();
+
+        // 2. Remove subtitle views
         for (ScrollTextView view : subtitleList) {
             view.setVisibility(View.GONE);
             m_Root.removeView(view);
@@ -487,6 +500,7 @@ public class ADRender {
         }
         subtitleList.clear();
 
+        // 3. Remove picture views
         for (View view : picList) {
             view.setVisibility(View.GONE);
             m_Root.removeView(view);
@@ -521,7 +535,9 @@ public class ADRender {
                     {
                         Video v = scene.video.get(i_vid);
                         if (v.filelist.size() > 0) {
-                            sceneExecutor.submit(new VideoUpdater(scene.dir, addVideo(v), v, i_vid));
+                            VideoPlayer vp = addVideo(v);
+                            videoList.add(vp);  // track for cleanup on scene change
+                            sceneExecutor.submit(new VideoUpdater(scene.dir, vp, v, i_vid));
                         } else {
                             rtk.addHDMI(scene.video.get(i_vid));
                         }

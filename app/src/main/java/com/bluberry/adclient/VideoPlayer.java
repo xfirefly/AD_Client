@@ -3,7 +3,6 @@ package com.bluberry.adclient;
 import android.content.Context;
 import android.media.AudioAttributes;
 import android.media.MediaPlayer;
-import android.media.MediaPlayer.OnErrorListener;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -15,157 +14,144 @@ import java.io.IOException;
 
 public class VideoPlayer implements SurfaceHolder.Callback {
     private final String TAG = "VideoPlayer";
-    MediaPlayer.OnPreparedListener mPreparedListener = new MediaPlayer.OnPreparedListener() {
-        public void onPrepared(MediaPlayer mp) {
-            Log.i(TAG, "onPrepared");
-            mp.setLooping(true);
-            mp.start();
-        }
-    };
-    private SurfaceView mSurfaceView = null;
-    private SurfaceHolder mSurfaceHolder = null;
-    private MediaPlayer mediaPlayer;
-    private Context mContext;
-    private String filePath;
-    private MediaPlayer.OnCompletionListener mCompletionListener = new MediaPlayer.OnCompletionListener() {
-        public void onCompletion(MediaPlayer mp) {
-            Log.i(TAG, "onCompletion");
-            mp.reset();
 
-            try {
-                mediaPlayer.setDataSource(filePath);
-                mediaPlayer.prepareAsync();
-            } catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            } catch (SecurityException e) {
-                e.printStackTrace();
-            } catch (IllegalStateException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
+    private SurfaceView mSurfaceView;
+    private MediaPlayer mediaPlayer;
+    private String filePath;
+
+    // Set to true before any MediaPlayer.release() call so concurrent stop()
+    // or surfaceDestroyed() invocations become safe no-ops.
+    private volatile boolean released = false;
+
+    // onPrepared: begin looping playback as soon as the decoder is ready.
+    // • Single-video playlist: setLooping(true) keeps it running indefinitely;
+    //   VideoUpdater sleeps forever and never calls play() again.
+    // • Multi-video playlist: VideoUpdater wakes after intval seconds and calls
+    //   play() with the next file, which reset()s the player — looping is
+    //   interrupted cleanly and the next video starts fresh.
+    private final MediaPlayer.OnPreparedListener mPreparedListener = mp -> {
+        Log.i(TAG, "onPrepared");
+        mp.setLooping(true);
+        mp.start();
     };
-    private OnErrorListener mOnErrorListener = new OnErrorListener() {
-        @Override
-        public boolean onError(MediaPlayer mp, int what, int extra) {
-            Log.d(TAG, "on error");
-            return false;
-        }
+
+    // NOTE: onCompletion is intentionally omitted.
+    // setLooping(true) already handles single-video continuous play without
+    // re-preparing. The old onCompletion did the same thing redundantly.
+
+    // Log errors; return false so the player can attempt natural recovery.
+    private final MediaPlayer.OnErrorListener mOnErrorListener = (mp, what, extra) -> {
+        Log.e(TAG, "MediaPlayer error what=" + what + " extra=" + extra);
+        return false;
     };
 
     public VideoPlayer(Context context, ViewGroup parent, int x, int y, int width, int height) {
-        mContext = context;
-
         mediaPlayer = new MediaPlayer();
 
-        AudioAttributes audioAttributes = new AudioAttributes.Builder()
+        mediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_MEDIA)
                 .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
-                .build();
-        mediaPlayer.setAudioAttributes(audioAttributes);
+                .build());
 
         mediaPlayer.setOnPreparedListener(mPreparedListener);
-        mediaPlayer.setOnCompletionListener(mCompletionListener);
         mediaPlayer.setOnErrorListener(mOnErrorListener);
 
         mSurfaceView = new SurfaceView(context);
-
         mSurfaceView.setZOrderMediaOverlay(true);
         mSurfaceView.setKeepScreenOn(true);
 
-        mSurfaceHolder = mSurfaceView.getHolder();
-        mSurfaceHolder.addCallback(this);
-        mSurfaceHolder.setFixedSize(width, height);
+        SurfaceHolder holder = mSurfaceView.getHolder();
+        holder.addCallback(this);
+        holder.setFixedSize(width, height);
 
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(width, height);
         params.leftMargin = x;
         params.topMargin = y;
         parent.addView(mSurfaceView, params);
-
         mSurfaceView.setVisibility(View.VISIBLE);
     }
 
-    private void play(String file) {
-        filePath = file;
-        try {
-            mediaPlayer.setDataSource(filePath);
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        } catch (SecurityException e) {
-            e.printStackTrace();
-        } catch (IllegalStateException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        mediaPlayer.prepareAsync();
+    /** Sets the file path for the next play() call without starting playback. */
+    public void setSource(String path) {
+        filePath = path;
     }
 
-    public void play() {
-        if (filePath == null) {
-            return;
-        }
+    /** Returns the SurfaceView so the parent can remove it from its ViewGroup on cleanup. */
+    public SurfaceView getSurfaceView() {
+        return mSurfaceView;
+    }
 
+    /**
+     * Starts (or restarts) playback of {@link #filePath}.
+     * Safe to call from any thread.
+     */
+    public void play() {
+        if (released || filePath == null) return;
         try {
             if (mediaPlayer.isPlaying()) {
                 mediaPlayer.stop();
             }
             mediaPlayer.reset();
             mediaPlayer.setDataSource(filePath);
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        } catch (SecurityException e) {
-            e.printStackTrace();
-        } catch (IllegalStateException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+            mediaPlayer.prepareAsync();
+        } catch (IllegalStateException | IOException | IllegalArgumentException | SecurityException e) {
+            Log.e(TAG, "play() failed", e);
         }
-        mediaPlayer.prepareAsync();
     }
 
-    public void setSource(String path) {
-        filePath = path;
-    }
-
-    public void destroy() {
-        if (mediaPlayer != null)
-            mediaPlayer.release();
-    }
-
-    public void surfaceCreated(SurfaceHolder holder) {
+    /**
+     * Stops ongoing playback. No-op if already stopped or {@link #destroy()} was called.
+     * Called from VideoUpdater (background thread) and surfaceDestroyed (main thread).
+     */
+    public void stop() {
+        if (released || mediaPlayer == null) return;
         try {
-            Log.i(TAG, "surfaceCreated");
+            if (mediaPlayer.isPlaying()) {
+                mediaPlayer.stop();
+            }
+        } catch (IllegalStateException e) {
+            Log.e(TAG, "stop() failed", e);
+        }
+    }
+
+    /**
+     * Permanently releases MediaPlayer resources. Must be called when the player is
+     * no longer needed. Sets {@link #released} before touching the MediaPlayer so
+     * any concurrent stop() or surfaceDestroyed() calls become safe no-ops.
+     */
+    public void destroy() {
+        released = true;         // guard first — stop() checks this flag
+        if (mediaPlayer != null) {
+            try { mediaPlayer.stop(); } catch (Exception ignored) {}
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+    }
+
+    // ── SurfaceHolder.Callback ────────────────────────────────────────────────
+
+    @Override
+    public void surfaceCreated(SurfaceHolder holder) {
+        if (released) return;
+        Log.i(TAG, "surfaceCreated");
+        try {
             mediaPlayer.setDisplay(holder);
             play();
-        } catch (IllegalArgumentException e) {
-            Log.e(TAG, "Illegal Argument Exception", e);
-        } catch (IllegalStateException e) {
-            Log.e(TAG, "Illegal State Exception", e);
-        } catch (SecurityException e) {
-            Log.e(TAG, "Security Exception", e);
         } catch (Exception e) {
-            Log.e(TAG, "Exception", e);
+            Log.e(TAG, "surfaceCreated failed", e);
         }
     }
 
+    @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         Log.i(TAG, "surfaceDestroyed");
-        if (mediaPlayer.isPlaying()) {
-            mediaPlayer.stop();
-        }
+        // stop() is a no-op if destroy() already ran (released == true),
+        // preventing double-stop / use-after-release.
+        stop();
     }
 
+    @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
         Log.i(TAG, "surfaceChanged");
-    }
-
-    public void stop() {
-        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-            mediaPlayer.stop();
-        }
     }
 }
