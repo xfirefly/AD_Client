@@ -358,10 +358,10 @@ public class ADRender {
     }
 
     private VideoPlayer addVideo(Video s) {
-        int x = cs.ipc.LocationCalc.ToFormX(s.x, screenWidth);
-        int y = cs.ipc.LocationCalc.ToFormY(s.y, screenHeight);
-        int w = cs.ipc.LocationCalc.ToFormX(s.w, screenWidth);
-        int h = cs.ipc.LocationCalc.ToFormY(s.h, screenHeight);
+        int x = (int) cs.ipc.LocationCalc.ToFormX(s.x, screenWidth);
+        int y = (int) cs.ipc.LocationCalc.ToFormY(s.y, screenHeight);
+        int w = (int) cs.ipc.LocationCalc.ToFormX(s.w, screenWidth);
+        int h = (int) cs.ipc.LocationCalc.ToFormY(s.h, screenHeight);
         VideoPlayer vplayer = new VideoPlayer(rtk, m_Root, x, y, w, h);
         print.i(TAG, "add vid " + s.x + "," + s.y + " " + s.w + "x" + s.h + " -> " + x + "," + y + " " + w + "x" + h);
         return vplayer;
@@ -373,10 +373,10 @@ public class ADRender {
     }
 
     private ImageView addPicture(Picture s) {
-        int x = cs.ipc.LocationCalc.ToFormX(s.x, screenWidth);
-        int y = cs.ipc.LocationCalc.ToFormY(s.y, screenHeight);
-        int w = cs.ipc.LocationCalc.ToFormX(s.w, screenWidth);
-        int h = cs.ipc.LocationCalc.ToFormY(s.h, screenHeight);
+        int x = (int) cs.ipc.LocationCalc.ToFormX(s.x, screenWidth);
+        int y = (int) cs.ipc.LocationCalc.ToFormY(s.y, screenHeight);
+        int w = (int) cs.ipc.LocationCalc.ToFormX(s.w, screenWidth);
+        int h = (int) cs.ipc.LocationCalc.ToFormY(s.h, screenHeight);
 
         ImageView iv = new ImageView(rtk);
         iv.setScaleType(ScaleType.FIT_XY);
@@ -396,10 +396,10 @@ public class ADRender {
     }
 
     private void addSubtitle(Subtitle s) {
-        int x = cs.ipc.LocationCalc.ToFormX(s.x, screenWidth);
-        int y = cs.ipc.LocationCalc.ToFormY(s.y, screenHeight);
-        int w = cs.ipc.LocationCalc.ToFormX(s.w, screenWidth);
-        int h = cs.ipc.LocationCalc.ToFormY(s.h, screenHeight);
+        int x = (int) cs.ipc.LocationCalc.ToFormX(s.x, screenWidth);
+        int y = (int) cs.ipc.LocationCalc.ToFormY(s.y, screenHeight);
+        int w = (int) cs.ipc.LocationCalc.ToFormX(s.w, screenWidth);
+        int h = (int) cs.ipc.LocationCalc.ToFormY(s.h, screenHeight);
 
         ScrollTextView view = new ScrollTextView(rtk);
 
