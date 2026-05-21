@@ -57,7 +57,6 @@ android {
         buildConfig true
     }
 
-    useLibrary  'org.apache.http.legacy'
 }
 
 tasks.withType(JavaCompile) {
@@ -66,10 +65,11 @@ tasks.withType(JavaCompile) {
 
 dependencies {
 
-    implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
     implementation "androidx.appcompat:appcompat:$rootProject.ext.supportLibraryVersion"
     implementation "androidx.constraintlayout:constraintlayout:$constraintlayout_version"
     implementation 'com.squareup.okhttp3:okhttp:' + okhttpVersion
     implementation 'io.github.azhon:appupdate:4.3.6'
+    implementation 'com.google.code.gson:gson:2.14.0'
+    implementation 'joda-time:joda-time:2.14.2'
 
 }

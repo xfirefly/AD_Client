@@ -93,21 +93,20 @@ public class MyBroadcastReceiver extends BroadcastReceiver {
 
         public void run() {
             try {
-                MainActivity.thiz.sendMessage(Msg.MESSAGE_RECV_JSON_BEGIN, "");
+                App.sendMessage(Msg.MESSAGE_RECV_JSON_BEGIN, "");
 
-                File f = new File(App.zipFile);
+                File f = new File(App.getZipFile());
                 IOUtil.delete(f);
-                IOUtil.copyFile(from, App.zipFile);
+                IOUtil.copyFile(from, App.getZipFile());
 
                 //RTKSourceInActivity.thiz.unzipAdFile();
 
                 String dir = App.getNextDir();
-                FileUtil.Unzip(App.zipFile, dir);
+                FileUtil.Unzip(App.getZipFile(), dir);
 
-                MainActivity.thiz.parseJson(dir, true);
+                App.parseJson(dir, true);
 
             } catch (Exception e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         }

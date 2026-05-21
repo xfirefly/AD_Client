@@ -6,7 +6,6 @@ import android.media.AudioManager;
 
 import com.bluberry.adclient.App;
 import com.bluberry.adclient.Msg;
-import com.bluberry.adclient.MainActivity;
 import com.bluberry.common.IOUtil;
 import com.bluberry.common.print;
 
@@ -79,7 +78,7 @@ public class CommandClient implements Runnable {
         try {
             //here you must put your computer's IP address.
             InetAddress serverAddr = InetAddress.getByName(serverIP);
-            System.out.println("CC: Connecting...");
+            print.d(tag, "Connecting...");
 
             //create a socket to make the connection with the server
             socket = new Socket(serverAddr, Cmd.cmd_port);
@@ -111,26 +110,20 @@ public class CommandClient implements Runnable {
                         }
                         serverMessage = null;
                     } else {
-                        System.out.println("CC: null Message, ERROR ");
+                        print.d(tag, "null Message, ERROR");
                         break;
                     }
 
                 }
 
             } catch (Exception e) {
-                System.out.println("CC: Error " + e);
-
+                print.d(tag, "Error " + e);
             } finally {
-                //the socket must be closed. It is not possible to reconnect to this socket
-                // after it is closed, which means a new socket instance has to be created.
                 stopClient();
-                System.out.println("CC: Done.");
-
-                //App.IpRecv.execute(IpReceiver.getInstance());
+                print.d(tag, "Done.");
             }
         } catch (Exception e) {
-            System.out.println("CC: Error2 " + e);
-            //e.printStackTrace();
+            print.d(tag, "Error2 " + e);
         }
     }
 
@@ -146,8 +139,8 @@ public class CommandClient implements Runnable {
             String cmd = strArr[0].substring(1).trim();
             String param = strArr[1].trim();
 
-            System.out.println("cmd:" + cmd);
-            System.out.println("param:" + param);
+            print.d(tag, "cmd:" + cmd);
+            print.d(tag, "param:" + param);
 
             switch (Command.valueOf(cmd)) {
                 case send_ad:
@@ -159,12 +152,11 @@ public class CommandClient implements Runnable {
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
                     Calendar c = Calendar.getInstance();
                     c.setTime(sdf.parse(param));
-                    System.out.println("cccc:" + c);
-                    AlarmManager am1 = (AlarmManager) MainActivity.thiz.getSystemService(Context.ALARM_SERVICE);
+                    AlarmManager am1 = (AlarmManager) App.getContext().getSystemService(Context.ALARM_SERVICE);
                     am1.setTime(c.getTimeInMillis());
                     break;
                 case get_time:
-                    System.out.println("nowTime: " + nowTime());
+                    print.d(tag, "nowTime: " + nowTime());
                     sendCommand(Cmd.create(Command.curr_time, nowTime()));
                     break;
 
@@ -175,15 +167,15 @@ public class CommandClient implements Runnable {
                     App.saveString("id", param);
                     break;
                 case get_screen:
-                    MainActivity.thiz.sendMessage(Msg.MESSAGE_TakeScreenshot, this);
+                    App.sendMessage(Msg.MESSAGE_TakeScreenshot, this);
                     break;
 
                 case prev_scene:
-                    MainActivity.thiz.sendMessage(Msg.MESSAGE_PREV_SCENE, this);
+                    App.sendMessage(Msg.MESSAGE_PREV_SCENE, this);
                     break;
 
                 case next_scene:
-                    MainActivity.thiz.sendMessage(Msg.MESSAGE_NEXT_SCENE, this);
+                    App.sendMessage(Msg.MESSAGE_NEXT_SCENE, this);
                     break;
 
                 case set_volume:
@@ -211,12 +203,12 @@ public class CommandClient implements Runnable {
                     break;
 
                 case clear:
-                    MainActivity.thiz.sendMessage(Msg.MESSAGE_NO_DATA, this);
+                    App.sendMessage(Msg.MESSAGE_NO_DATA, this);
 
                     try {
                         Process su;
                         su = Runtime.getRuntime().exec("sh");
-                        String cmdrm = "rm -fr " + App.AdDir + "* " + "\n" + "exit\n";
+                        String cmdrm = "rm -fr " + App.getAdDir() + "* " + "\n" + "exit\n";
                         print.w(tag, cmdrm);
 
                         su.getOutputStream().write(cmdrm.getBytes());
@@ -229,8 +221,8 @@ public class CommandClient implements Runnable {
                     }
 
                     Thread.sleep(2000);
-                    for (String str : App.getDirs(App.AdDir)) {
-                        String tmp = App.AdDir + str + "/";
+                    for (String str : App.getDirs(App.getAdDir())) {
+                        String tmp = App.getAdDir() + str + "/";
                         IOUtil.delete(new File(tmp));
                     }
                     break;
@@ -253,7 +245,6 @@ public class CommandClient implements Runnable {
                     break;
             }
         } catch (Exception e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
 
@@ -278,7 +269,6 @@ public class CommandClient implements Runnable {
                     out.println(Cmd.create(Command.heartbeat, ""));
                 }
             } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         }

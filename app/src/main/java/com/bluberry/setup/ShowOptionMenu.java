@@ -1,7 +1,8 @@
 package com.bluberry.setup;
 
 import android.content.Context;
-import android.graphics.drawable.BitmapDrawable;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.PopupWindow;
@@ -9,11 +10,6 @@ import android.widget.PopupWindow;
 import com.bluberry.adclient.R;
 import com.bluberry.adclient.MainActivity;
 
-/**
- * ��ʾ ѡԴ�� UI
- *
- * @author Administrator
- */
 public class ShowOptionMenu {
 
     private PopupWindow popupWindow = null;
@@ -36,15 +32,12 @@ public class ShowOptionMenu {
         int view_h = (int) (0.6 * screenHeight);
 
         if (popupWindow == null) {
-
             LayoutInflater layoutInflater = (LayoutInflater) myMainActivity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             view = (OptionMenuLayout) layoutInflater.inflate(R.layout.option_menu, null);
-
             view.initView();
 
             popupWindow = new PopupWindow(view, view_w, view_h);
             popupWindow.setAnimationStyle(R.style.setupAnim);
-
         } else {
             if (popupWindow.isShowing()) {
                 popupWindow.dismiss();
@@ -56,13 +49,10 @@ public class ShowOptionMenu {
         view.initView();
 
         popupWindow.setFocusable(true);
-
         popupWindow.setOutsideTouchable(true);
-
-        popupWindow.setBackgroundDrawable(new BitmapDrawable());
+        popupWindow.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
 
         popupWindow.showAsDropDown(parent, (screenWidth - view_w) / 2, (screenHeight - view_h) / 2);
-
     }
 
     public void close() {
@@ -74,5 +64,4 @@ public class ShowOptionMenu {
             }
         }
     }
-
 }

@@ -20,7 +20,7 @@ public class ArrowView extends LinearLayout implements View.OnClickListener {
     private ImageView mArrowLeft;
     private ImageView mArrowRight;
     private TextView mContentView;
-    private List mList;
+    private List<String> mList;
 
     private OnItemSelectedLinstener mOnItemSelectedLinstener;
 
@@ -38,22 +38,15 @@ public class ArrowView extends LinearLayout implements View.OnClickListener {
 
     @Override
     public void onClick(View paramView) {
-        // TODO Auto-generated method stub
-        switch (paramView.getId()) {
-            case R.id.context_view:
-                break;
-            case R.id.arrow_left:
-                doSwitch(-1);
-                break;
-            case R.id.arrow_right:
-                doSwitch(1);
-                break;
+        int id = paramView.getId();
+        if (id == R.id.arrow_left) {
+            doSwitch(-1);
+        } else if (id == R.id.arrow_right) {
+            doSwitch(1);
         }
-
     }
 
     private void doSwitch(int paramInt) {
-
         if (getCount() > 1) {
             currentIndex = (paramInt + currentIndex);
 
@@ -63,24 +56,20 @@ public class ArrowView extends LinearLayout implements View.OnClickListener {
                 currentIndex = -1 + mList.size();
             }
 
-            mContentView.setText((CharSequence) mList.get(currentIndex));
+            mContentView.setText(mList.get(currentIndex));
             onItemSelected(currentIndex);
         }
-
     }
 
     private void onItemSelected(int paramInt) {
         if (mOnItemSelectedLinstener != null) {
             mOnItemSelectedLinstener.onItemSelected(ArrowView.this, paramInt);
-
         }
-
     }
 
     public boolean dispatchKeyEvent(KeyEvent paramKeyEvent) {
         if (paramKeyEvent.getAction() == 0) {
             switch (paramKeyEvent.getKeyCode()) {
-
                 case KeyEvent.KEYCODE_DPAD_LEFT:
                     mArrowLeft.setPressed(true);
                     doSwitch(-1);
@@ -92,7 +81,6 @@ public class ArrowView extends LinearLayout implements View.OnClickListener {
             }
         } else if (paramKeyEvent.getAction() != 1) {
             switch (paramKeyEvent.getKeyCode()) {
-
                 case KeyEvent.KEYCODE_DPAD_LEFT:
                     mArrowLeft.setPressed(false);
                     doSwitch(-1);
@@ -102,7 +90,6 @@ public class ArrowView extends LinearLayout implements View.OnClickListener {
                     doSwitch(1);
                     return true;
             }
-
         }
         return super.dispatchKeyEvent(paramKeyEvent);
     }
@@ -135,14 +122,14 @@ public class ArrowView extends LinearLayout implements View.OnClickListener {
         }
     }
 
-    public void setData(List paramList) {
+    public void setData(List<String> paramList) {
         setData(paramList, 0);
     }
 
-    public void setData(List paramList, int paramInt) {
+    public void setData(List<String> paramList, int paramInt) {
         if ((paramList != null) && (paramList.size() != 0)) {
             currentIndex = paramInt;
-            mContentView.setText((CharSequence) paramList.get(paramInt));
+            mContentView.setText(paramList.get(paramInt));
             mList = paramList;
 
             if (paramList.size() == 1) {
@@ -154,17 +141,15 @@ public class ArrowView extends LinearLayout implements View.OnClickListener {
             }
             postInvalidate();
         }
-
     }
 
     public void setLeftArrowIcon(Drawable paramDrawable) {
         if (mArrowLeft != null) {
             mArrowLeft.setImageDrawable(paramDrawable);
         }
-
     }
 
-    public void setOnItemSelectedLinstener(ArrowView.OnItemSelectedLinstener paramOnItemSelectedLinstener) {
+    public void setOnItemSelectedLinstener(OnItemSelectedLinstener paramOnItemSelectedLinstener) {
         mOnItemSelectedLinstener = paramOnItemSelectedLinstener;
     }
 
@@ -172,10 +157,9 @@ public class ArrowView extends LinearLayout implements View.OnClickListener {
         if (mArrowRight != null) {
             mArrowRight.setImageDrawable(paramDrawable);
         }
-
     }
 
-    public abstract interface OnItemSelectedLinstener {
-        public abstract void onItemSelected(ArrowView paramArrowView, int paramInt);
+    public interface OnItemSelectedLinstener {
+        void onItemSelected(ArrowView paramArrowView, int paramInt);
     }
 }

@@ -8,11 +8,14 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.graphics.Typeface;
 import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.os.Environment;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.os.StatFs;
 
 import com.bluberry.common.print;
+
+import android.os.Handler;
+import android.os.Message;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -23,31 +26,37 @@ import java.util.HashMap;
 import java.util.concurrent.Executor;
 
 public class App extends Application {
-    //============== config ==============
-    //public final static boolean WAN = true;
     public final static boolean HDMI = false;
 
-    //所有ad zip 解压到本目录下, 按数字递增取文件夹名
-    public static final String AdDir = Environment.getExternalStorageDirectory().getAbsolutePath() + "/ad_bluberry/";
-    //////////////////////////////////////////////////
     private final static String TAG = "App";
     public static volatile boolean Alive = false;
     public static Executor IpRecvrr;
-    public static String zipFile = Environment.getExternalStorageDirectory().getAbsolutePath() + "/ad_bluberry_z.zip";
-    public static String apkFile = Environment.getExternalStorageDirectory().getAbsolutePath() + "/ad_bluberry_z.apk";
 
     private static App instance;
+    private static Handler messageHandler;
+    private static ADRender adRenderInstance;
     private HashMap<String, Typeface> fontHashMap;
     private String imageCacheDir = null;
     private Activity currentActivity = null;
 
-    // 获取可用文件夹名称
+    public static String getAdDir() {
+        return instance.getExternalFilesDir(null).getAbsolutePath() + "/ad_bluberry/";
+    }
+
+    public static String getZipFile() {
+        return instance.getExternalFilesDir(null).getAbsolutePath() + "/ad_bluberry_z.zip";
+    }
+
+    public static String getApkFile() {
+        return instance.getExternalFilesDir(null).getAbsolutePath() + "/ad_bluberry_z.apk";
+    }
+
     public static String getNextDir() {
         String dir;
         int last = getInt("ad_dir_idx");
         while (true) {
             last++;
-            dir = AdDir + last + "/";
+            dir = getAdDir() + last + "/";
             File f = new File(dir);
             if (!f.exists()) {
                 f.mkdir();
@@ -66,14 +75,14 @@ public class App extends Application {
                 return new File(current, name).isDirectory();
             }
         });
-        Arrays.sort(directories);
-        System.out.println(Arrays.toString(directories));
+        if (directories != null) {
+            Arrays.sort(directories);
+        } else {
+            directories = new String[0];
+        }
         return directories;
     }
 
-    /**
-     * @return The Application Instance
-     */
     public static App getInstance() {
         return instance;
     }
@@ -83,12 +92,10 @@ public class App extends Application {
     }
 
     public static void saveString(String key, String value) {
-
         getInstance().savePref("adclient", key, value);
     }
 
     public static String getString(String key) {
-
         return getInstance().getPref("adclient", key);
     }
 
@@ -102,14 +109,11 @@ public class App extends Application {
 
     public static void RunAsApp(String cmds) {
         print.w(TAG, "cmds " + cmds);
-
         try {
             Process su = Runtime.getRuntime().exec("su");
             DataOutputStream outputStream = new DataOutputStream(su.getOutputStream());
-
             outputStream.writeBytes(cmds + "\n");
             outputStream.flush();
-
             outputStream.writeBytes("exit\n");
             outputStream.flush();
             su.waitFor();
@@ -135,27 +139,18 @@ public class App extends Application {
         }
     }
 
-    /**
-     * 不要执行太多代码,影响启动速度
-     */
     @Override
     public void onCreate() {
         super.onCreate();
         instance = this;
         Alive = true;
 
-        fontHashMap = new HashMap<String, Typeface>();
+        fontHashMap = new HashMap<>();
 
-
-        File d = new File(AdDir);
+        File d = new File(getAdDir());
         if (!d.exists()) {
             d.mkdir();
         }
-
-/*		RtkHDMIManager r = new RtkHDMIManager();
-		if (r != null) {
-			r.setTVSystem(9);   // 1080p 50 for tuke
-		}*/
     }
 
     public Typeface getFont(String ttfName) {
@@ -165,23 +160,15 @@ public class App extends Application {
             tf = Typeface.createFromAsset(getAssets(), "fonts/" + ttfName);
             fontHashMap.put(ttfName, tf);
         }
-
         return tf;
     }
 
-    /**
-     * Called when the overall system is running low on memory
-     */
     @Override
     public void onLowMemory() {
         super.onLowMemory();
-
         print.w(TAG, "System is running low on memory");
     }
 
-    /**
-     * @return the main resources from the App
-     */
     public Resources getAppResources() {
         return instance.getResources();
     }
@@ -191,19 +178,17 @@ public class App extends Application {
             return imageCacheDir;
         }
 
-        StatFs stat;
-        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
-            String dir = Environment.getExternalStorageDirectory().getAbsolutePath();
-            stat = new StatFs(dir); // 创建StatFs对象
-            long blockSize = stat.getBlockSize(); // 获取block的size
-            float totalBlocks = stat.getBlockCount(); // 获取block的个数
-            int sizeInMb = (int) (blockSize * totalBlocks) / 1024 / 1024; // 计算总容量
+        File extDir = getExternalFilesDir(null);
+        if (extDir != null) {
+            StatFs stat = new StatFs(extDir.getAbsolutePath());
+            long blockSize = stat.getBlockSizeLong();
+            long totalBlocks = stat.getBlockCountLong();
+            long sizeInMb = (blockSize * totalBlocks) / 1024 / 1024;
 
             if (sizeInMb == 0) {
-                print.e("sd card", "size 0, why why why why why why why why ???"); // xiaomi
                 imageCacheDir = getFilesDir().getAbsolutePath();
             } else {
-                imageCacheDir = dir;
+                imageCacheDir = extDir.getAbsolutePath();
             }
         } else {
             imageCacheDir = getFilesDir().getAbsolutePath();
@@ -213,114 +198,62 @@ public class App extends Application {
     }
 
     public int getFreeSpaceInMB(String dirName) {
-        int imageCacheDirFree = 0;
-
         StatFs stat = new StatFs(dirName);
-        long data_blockSize = stat.getBlockSize(); // 获取block的size
-        long data_availableBlocks = stat.getAvailableBlocks(); // 获取可用block的个数
-        imageCacheDirFree = (int) (data_blockSize * data_availableBlocks) / 1024 / 1024; // MB可用容量
-
-        print.e("getFreeSpaceInMB ", dirName + ":" + imageCacheDirFree);
-
-        return imageCacheDirFree;
+        long blockSize = stat.getBlockSizeLong();
+        long availableBlocks = stat.getAvailableBlocksLong();
+        int free = (int) ((blockSize * availableBlocks) / 1024 / 1024);
+        print.e("getFreeSpaceInMB ", dirName + ":" + free);
+        return free;
     }
 
-    /**
-     * true if Network connected
-     *
-     * @return
-     */
     public boolean isNetworkAvailable() {
-        Context context = getApplicationContext();
-        ConnectivityManager connect = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager cm = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm == null) return false;
 
-        if (connect == null) {
-            return false;
-        } else { // get all network info
-            NetworkInfo[] info = connect.getAllNetworkInfo();
-            if (info != null) {
-                for (int i = 0; i < info.length; i++) {
-                    if (info[i].getState() == NetworkInfo.State.CONNECTED) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
+        Network network = cm.getActiveNetwork();
+        if (network == null) return false;
+
+        NetworkCapabilities caps = cm.getNetworkCapabilities(network);
+        return caps != null && (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+                || caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+                || caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
     }
 
-    /**
-     * save Preferences in current context
-     *
-     * @param prefName
-     * @param key
-     * @param value
-     */
     public void savePref(String prefName, String key, String value) {
         print.i(TAG, "set " + key + " : " + value);
-
-        SharedPreferences.Editor sharedatab = getSharedPreferences(prefName, Context.MODE_PRIVATE).edit();
-        sharedatab.putString(key, value);
-        sharedatab.apply();
+        SharedPreferences.Editor editor = getSharedPreferences(prefName, Context.MODE_PRIVATE).edit();
+        editor.putString(key, value);
+        editor.apply();
     }
 
-    /**
-     * get Preferences in current context
-     *
-     * @param prefName
-     * @param key
-     * @return if key not found, return null
-     */
     public String getPref(String prefName, String key) {
         SharedPreferences sharedata = getSharedPreferences(prefName, Context.MODE_PRIVATE);
         String value = sharedata.getString(key, "0");
-
         print.i(TAG, "get " + key + " : " + value);
         return value;
     }
 
-    /**
-     * delete Preferences in current context
-     *
-     * @param prefName
-     * @param key
-     */
     public void deletePref(String prefName, String key) {
-        SharedPreferences.Editor sharedatab = getSharedPreferences(prefName, Context.MODE_PRIVATE).edit();
-
-        sharedatab.remove(key);
-        sharedatab.apply();
+        SharedPreferences.Editor editor = getSharedPreferences(prefName, Context.MODE_PRIVATE).edit();
+        editor.remove(key);
+        editor.apply();
     }
 
-    /**
-     * 获取其他apk 的SharedPreferences 内容
-     *
-     * @param pkgName  "com.example.blueberrybackplay"
-     * @param prefName "huibo"
-     * @param key      "url"
-     */
     public String getOtherAppPref(String pkgName, String prefName, String key) {
-        Context huiboContext = null;
         try {
-            huiboContext = createPackageContext(pkgName, CONTEXT_IGNORE_SECURITY);
+            Context otherContext = createPackageContext(pkgName, CONTEXT_IGNORE_SECURITY);
+            SharedPreferences preferences = otherContext.getSharedPreferences(prefName, Context.MODE_PRIVATE);
+            return preferences.getString(key, null);
         } catch (NameNotFoundException e) {
             e.printStackTrace();
         }
-        SharedPreferences preferences = huiboContext.getSharedPreferences(prefName, Context.MODE_PRIVATE);
-        String value = preferences.getString(key, null);
-
-        return value;
+        return null;
     }
 
     public String filesDir() {
         return instance.getFilesDir().getAbsolutePath();
     }
 
-    /**
-     * for LanmeiHome
-     *
-     * @return
-     */
     public Activity getCurrentActivity() {
         return currentActivity;
     }
@@ -329,4 +262,24 @@ public class App extends Application {
         currentActivity = activity;
     }
 
+    public static void setMessageHandler(Handler handler) {
+        messageHandler = handler;
+    }
+
+    public static void sendMessage(Msg msg, Object obj) {
+        if (messageHandler != null) {
+            Message m = messageHandler.obtainMessage(msg.ordinal(), obj);
+            m.sendToTarget();
+        }
+    }
+
+    public static void setAdRender(ADRender render) {
+        adRenderInstance = render;
+    }
+
+    public static void parseJson(String dir, boolean add) {
+        if (adRenderInstance != null) {
+            adRenderInstance.parseJson(dir, add);
+        }
+    }
 }

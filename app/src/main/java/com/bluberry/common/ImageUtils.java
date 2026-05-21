@@ -45,7 +45,7 @@ public class ImageUtils {
      */
     public static Bitmap getBitmap(final String imagePath, int sampleSize) {
         final Options options = new Options();
-        options.inDither = false;
+
         options.inSampleSize = sampleSize;
 
         RandomAccessFile file = null;
@@ -74,7 +74,7 @@ public class ImageUtils {
      */
     public static Bitmap getBitmap(final byte[] image, int sampleSize) {
         final Options options = new Options();
-        options.inDither = false;
+
         options.inSampleSize = sampleSize;
         return BitmapFactory.decodeByteArray(image, 0, image.length, options);
     }

@@ -233,7 +233,7 @@ public class ScrollTextView extends TextView {
 
     }
 
-    public void distory() {
+    public void destroy() {
         pauseScroll();
     }
 }

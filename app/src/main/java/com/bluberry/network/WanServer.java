@@ -12,7 +12,6 @@ import java.util.List;
 
 public class WanServer {
     private DatagramSocket socket;
-
     private CommandClient commandClient;
 
     public static WanServer getInstance() {
@@ -20,7 +19,7 @@ public class WanServer {
     }
 
     public void Close() {
-        System.out.println("WanServer Close  ");
+        print.d("WanServer", "WanServer Close");
         if (commandClient != null) {
             commandClient.stopClient();
         }
@@ -34,7 +33,6 @@ public class WanServer {
     }
 
     private static class DiscoveryThreadHolder {
-
         private static final WanServer INSTANCE = new WanServer();
     }
 
@@ -44,14 +42,13 @@ public class WanServer {
     }
 
     public class Cust2IPList {
-        public List<Cust2IP> list = new ArrayList<Cust2IP>();
+        public List<Cust2IP> list = new ArrayList<>();
     }
 
     public class WanConnectRun implements Runnable {
         private String getServer() {
             String url = "http://file.fooyou.org/apk/ad/custom2ip.json?cust=" + PkgConfig.customer;
             Gson gson = new Gson();
-
             Cust2IPList lst = gson.fromJson(HttpRequestHelper.getInstance().getUTF8String(url), Cust2IPList.class);
             for (Cust2IP c : lst.list) {
                 if (c.cust.equals(PkgConfig.customer)) {
@@ -62,11 +59,6 @@ public class WanServer {
         }
 
         public void run() {
-//			String servip = getServer();
-//			if (servip == null) {
-//				return;
-//			}
-
             String servip = App.getString("wan_ip");
             if (!validIP(servip))
                 return;
@@ -83,10 +75,8 @@ public class WanServer {
                     commandClient = null;
                     Thread.sleep(10000);
                 } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 } catch (Exception e) {
-                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
             }
@@ -119,5 +109,4 @@ public class WanServer {
             }
         }
     }
-
 }
